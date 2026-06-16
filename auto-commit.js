@@ -4,12 +4,15 @@ const chokidar = require('chokidar');
 const { simpleGit } = require('simple-git');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const git = simpleGit();
 const ignoredFiles = ['.git', '.DS_Store', 'node_modules', '.vscode', 'package.json', 'package-lock.json', 'auto-commit.js'];
 const debounceTime = 2000; // 2초 대기
+const maxRetries = 3; // 최대 재시도 횟수
 let debounceTimer = null;
 let pendingChanges = new Set();
+let isProcessing = false;
 
 // 파일 경로 정규화
 function normalizePath(filePath) {
@@ -20,6 +23,19 @@ function normalizePath(filePath) {
 function shouldIgnore(filePath) {
   const normalized = normalizePath(filePath);
   return ignoredFiles.some(ignored => normalized.includes(ignored));
+}
+
+// git lock 파일 정리
+function cleanGitLock() {
+  try {
+    const lockFile = '.git/index.lock';
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+      console.log('🧹 git lock 파일 정리됨');
+    }
+  } catch (error) {
+    console.error('⚠️ lock 파일 정리 실패:', error.message);
+  }
 }
 
 // 변경사항 요약 생성
@@ -63,16 +79,26 @@ async function generateCommitMessage() {
   }
 }
 
-// 자동 커밋 및 푸시
-async function autoCommitAndPush() {
+// 자동 커밋 및 푸시 (재시도 로직 포함)
+async function autoCommitAndPush(attempt = 1) {
   try {
-    console.log('\n🔄 변경사항 감지됨, 처리 중...');
+    // git lock 파일 정리
+    cleanGitLock();
+    
+    if (isProcessing) {
+      console.log('⏳ 이미 처리 중입니다...');
+      return;
+    }
+    
+    isProcessing = true;
+    console.log(`\n🔄 변경사항 감지됨, 처리 중... (시도 ${attempt}/${maxRetries})`);
     
     const status = await git.status();
     
     // 변경사항이 없으면 return
     if (status.files.length === 0) {
       console.log('✨ 커밋할 변경사항이 없습니다.');
+      isProcessing = false;
       return;
     }
     
@@ -83,6 +109,7 @@ async function autoCommitAndPush() {
     
     if (filesToAdd.length === 0) {
       console.log('✨ 커밋할 변경사항이 없습니다.');
+      isProcessing = false;
       return;
     }
     
@@ -98,13 +125,56 @@ async function autoCommitAndPush() {
     console.log(`✅ 커밋 완료: ${commit.commit}`);
     console.log(commitMessage);
     
-    // 푸시
-    await git.push(['origin', 'main']);
-    console.log('✅ 푸시 완료!');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    // 푸시 (재시도 로직)
+    try {
+      await git.push(['origin', 'main']);
+      console.log('✅ 푸시 완료!');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      isProcessing = false;
+    } catch (pushError) {
+      console.error('❌ 푸시 실패:', pushError.message);
+      
+      // 리모트와의 불일치 가능성이 있으므로 pull 시도
+      if (pushError.message.includes('rejected')) {
+        console.log('🔄 리모트와 동기화 중...');
+        try {
+          await git.pull(['--no-rebase', 'origin', 'main']);
+          console.log('✅ 동기화 완료, 다시 푸시 시도...');
+          await git.push(['origin', 'main']);
+          console.log('✅ 푸시 완료!');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+          isProcessing = false;
+        } catch (retryError) {
+          if (attempt < maxRetries) {
+            console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
+            isProcessing = false;
+            setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
+          } else {
+            console.error('❌ 최대 재시도 횟수 초과:', retryError.message);
+            isProcessing = false;
+          }
+        }
+      } else {
+        if (attempt < maxRetries) {
+          console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
+          isProcessing = false;
+          setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
+        } else {
+          console.error('❌ 최대 재시도 횟수 초과');
+          isProcessing = false;
+        }
+      }
+    }
     
   } catch (error) {
     console.error('❌ 오류 발생:', error.message);
+    isProcessing = false;
+    
+    // 일시적인 오류일 경우 재시도
+    if (attempt < maxRetries) {
+      console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
+      setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
+    }
   }
 }
 

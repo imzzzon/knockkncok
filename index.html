@@ -292,7 +292,15 @@
         font-size: min(3.5vw, 12px);
         text-align: center;
         width: 85%;
-        word-break: keep-all;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        line-height: 1.3;
+        max-height: 80%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .open-chat-btn {

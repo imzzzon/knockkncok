@@ -1,0 +1,26 @@
+{
+  "name": "knock",
+  "version": "1.0.0",
+  "description": "레전드 정신병원 문 두드리기",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "auto-commit": "node auto-commit.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imzzzon/knockkncok.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/imzzzon/knockkncok/issues"
+  },
+  "homepage": "https://github.com/imzzzon/knockkncok#readme",
+  "devDependencies": {
+    "chokidar": "^5.0.0",
+    "simple-git": "^3.36.0"
+  }
+}

@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+    />
+    <title>온라인 대환장 폐쇄병동</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css"
+    />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --border: #111111;
+        --gray-light: #eeeeee;
+        --gray-mid: #999999;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff !important;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      body {
+        color: var(--text);
+        font-family: "Pretendard", sans-serif;
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .app-container {
+        width: 100%;
+        max-width: 420px;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        background-color: #ffffff;
+      }
+
+      .top-half {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 10;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .header {
+        padding: 3vh 16px;
+        text-align: center;
+        position: relative;
+        width: 100%;
+        flex-shrink: 0;
+      }
+
+      .title-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .title-btn {
+        font-size: 22px;
+        font-weight: 900;
+        margin-bottom: 8px;
+        letter-spacing: -1px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .title-btn:active {
+        opacity: 0.7;
+      }
+      .title-arrow {
+        font-size: 14px;
+        color: var(--border);
+        transition: transform 0.2s;
+      }
+      .title-dropdown.open .title-arrow {
+        transform: rotate(180deg);
+      }
+
+      .title-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+        z-index: 200;
+        min-width: 220px;
+        text-align: left;
+        margin-top: 5px;
+      }
+      .title-menu.show {
+        display: flex;
+        flex-direction: column;
+      }
+      .title-menu a {
+        padding: 12px 16px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+        border-bottom: 1px dashed var(--gray-light);
+      }
+      .title-menu a:hover {
+        background-color: var(--gray-light);
+      }
+      .title-menu a:last-child {
+        border-bottom: none;
+      }
+      .coming-soon {
+        color: var(--gray-mid);
+        font-size: 12px;
+        font-weight: 500;
+        margin-left: 4px;
+      }
+
+      .header p {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--gray-mid);
+      }
+      .live-badge {
+        display: inline-block;
+        background: var(--text);
+        color: var(--bg);
+        padding: 6px 12px;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        font-size: 13px;
+        font-weight: 800;
+        margin-top: 12px;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(0.98);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .door-wrapper {
+        height: 38vh;
+        width: calc(38vh * 0.75);
+        max-height: 280px;
+        max-width: 210px;
+        min-height: 180px;
+        min-width: 135px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.05s;
+        display: flex;
+        justify-content: center;
+        /* 💡 수정: center에서 flex-end로 변경하여 문이 항상 컨테이너 바닥에 붙게 설정 */
+        align-items: flex-end;
+        z-index: 10;
+        margin-top: 1vh;
+      }
+      .door-wrapper:active {
+        transform: scale(0.95);
+      }
+      .door-wrapper.shake {
+        animation: dshake 0.15s linear 2;
+      }
+      @keyframes dshake {
+        0% {
+          transform: translateX(0) rotate(0deg);
+        }
+        25% {
+          transform: translateX(-5px) rotate(-2deg);
+        }
+        50% {
+          transform: translateX(5px) rotate(2deg);
+        }
+        75% {
+          transform: translateX(-3px) rotate(-1deg);
+        }
+        100% {
+          transform: translateX(0) rotate(0deg);
+        }
+      }
+
+      /* 💡 수정: 병원 이미지가 덜컹거리지 않고 제자리에서 바뀌도록 설정 */
+      .door-asset-img {
+        width: 150%;
+        height: 150%;
+        object-fit: contain;
+        object-position: bottom center; /* SVG 내부 비율이 달라도 바닥 기준으로 정렬 */
+        transform-origin: bottom center; /* 크기가 1.25배 커질 때 아래로 파고들지 않고 위로만 커지게 고정 */
+        filter: grayscale(100%) contrast(1.2);
+        pointer-events: none;
+        user-select: none;
+        transition: transform 0.3s ease;
+      }
+
+      .bottom-half {
+        width: 100%;
+        position: relative;
+        padding-bottom: max(3vh, env(safe-area-inset-bottom));
+        z-index: 20;
+        flex-shrink: 0;
+      }
+
+      .character-area {
+        position: relative;
+        left: 6vw;
+        width: 28vw;
+        max-width: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: none;
+        margin-bottom: 9vh;
+      }
+
+      .character-asset {
+        width: 100%;
+        height: 18vh;
+        min-height: 130px;
+        max-height: 160px;
+        object-fit: contain;
+        object-position: bottom center;
+        filter: grayscale(100%) contrast(1.2);
+      }
+
+      .talk-bubble {
+        position: absolute;
+        bottom: 50%;
+        left: 110%;
+        width: 50vw;
+        max-width: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        filter: grayscale(100%) contrast(1.2);
+      }
+
+      .talk-bubble-bg {
+        width: 100%;
+        height: auto;
+      }
+
+      .talk-text {
+        position: absolute;
+        top: 48%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--text);
+        font-family: "Pretendard", sans-serif;
+        font-weight: 500;
+        font-size: min(3.5vw, 12px);
+        text-align: center;
+        width: 85%;
+        word-break: keep-all;
+      }
+
+      .open-chat-btn {
+        position: absolute;
+        bottom: max(2vh, env(safe-area-inset-bottom));
+        right: 4vw;
+        background: var(--text);
+        color: var(--bg);
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 800;
+        border: 2px solid var(--border);
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        cursor: pointer;
+        z-index: 20;
+        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+      }
+      .open-chat-btn:active {
+        transform: scale(0.95);
+      }
+
+      #fx-pool {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 50;
+        overflow: hidden;
+      }
+
+      .knock-fx {
+        position: absolute;
+        font-family: "Galmuri9", sans-serif;
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--border);
+        image-rendering: pixelated;
+        pointer-events: none;
+        animation: floatHover 1.2s ease-out forwards;
+      }
+      @keyframes floatHover {
+        0% {
+          opacity: 0;
+          transform: scale(0.5) translateY(10px);
+        }
+        20% {
+          opacity: 1;
+          transform: scale(1.2) translateY(-10px);
+        }
+        70% {
+          opacity: 1;
+          transform: scale(1) translateY(-20px);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.8) translateY(-40px);
+        }
+      }
+
+      .chat-drawer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 65%;
+        background: var(--bg);
+        border-top: 4px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        box-shadow: 0px -5px 15px rgba(0, 0, 0, 0.1);
+      }
+      .chat-drawer.open {
+        transform: translateY(0);
+      }
+
+      .chat-header {
+        padding: 15px;
+        background: var(--gray-light);
+        border-bottom: 2px dashed var(--gray-mid);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chat-header h2 {
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .close-chat-btn {
+        background: var(--bg);
+        color: var(--text);
+        border: 2px solid var(--border);
+        padding: 4px 12px;
+        font-family: "Pretendard", sans-serif;
+        font-weight: bold;
+        font-size: 13px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .chat-msg {
+        font-size: 14px;
+        line-height: 1.5;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed var(--gray-light);
+        word-break: break-all;
+      }
+      .chat-msg:last-child {
+        border-bottom: none;
+      }
+      .msg-name {
+        font-weight: 800;
+        margin-right: 8px;
+        background: var(--gray-light);
+        color: var(--text);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        border: 1px solid var(--text);
+      }
+      .msg-text {
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .chat-input-area {
+        display: flex;
+        padding: 12px;
+        border-top: 3px solid var(--border);
+        background: var(--gray-light);
+        gap: 8px;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .chat-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 2px solid var(--border);
+        border-radius: 255px 5px 225px 3px / 5px 225px 3px 255px;
+        font-family: "Pretendard", sans-serif;
+        font-size: 14px;
+        outline: none;
+        background: var(--bg);
+      }
+      .chat-send {
+        padding: 0 16px;
+        background: var(--text);
+        color: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 3px 255px 5px 225px / 225px 5px 255px 3px;
+        font-family: "Pretendard", sans-serif;
+        font-weight: 800;
+        font-size: 14px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .chat-send:active {
+        background: var(--gray-mid);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <div id="fx-pool"></div>
+
+      <div class="top-half">
+        <div class="header">
+          <div class="title-dropdown" id="title-dropdown">
+            <h1 id="title-btn" class="title-btn">
+              대환장 폐쇄병동 <span class="title-arrow">▼</span>
+            </h1>
+            <div id="title-menu" class="title-menu">
+              <a href="#">👊 분노의 샌드백 방</a>
+              <a href="#"
+                >☠️ 끝없는 야근의 늪
+                <span class="coming-soon">(준비중)</span></a
+              >
+              <a href="#"
+                >🕳️ 영원한 밑빠진 독
+                <span class="coming-soon">(준비중)</span></a
+              >
+            </div>
+          </div>
+
+          <p>🔥 현재 함께 두드리는 중: <span id="live-count">8,421</span>명</p>
+          <div class="live-badge">
+            내가 두드린 횟수: <span id="user-knocks">0</span>회
+          </div>
+        </div>
+
+        <div class="door-wrapper" id="door-wrapper">
+          <img
+            src="img/Level.1.svg"
+            class="door-asset-img"
+            id="door-img"
+            alt="정신병원 문 에셋"
+          />
+        </div>
+      </div>
+
+      <div class="bottom-half">
+        <div class="character-area">
+          <img
+            src="img/main_character.svg"
+            class="character-asset"
+            id="character-img"
+            alt="캐릭터 에셋"
+          />
+          <div class="talk-bubble">
+            <img src="img/talk.svg" alt="말풍선 배경" class="talk-bubble-bg" />
+            <p class="talk-text" id="character-talk">나... 힘들다 진짜</p>
+          </div>
+        </div>
+
+        <button class="open-chat-btn" id="open-chat-btn">
+          📢 고함지르기 방 입장
+        </button>
+      </div>
+
+      <div class="chat-drawer" id="chat-drawer">
+        <div class="chat-header">
+          <h2>익명 하소연 / 고함지르기 방</h2>
+          <button class="close-chat-btn" id="close-chat-btn">닫기</button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg">
+            <span class="msg-name">익명_123</span
+            ><span class="msg-text">아 제발 퇴근 좀 시켜줘요...</span>
+          </div>
+          <div class="chat-msg">
+            <span class="msg-name">익명_456</span
+            ><span class="msg-text">여기 갇힌 사람 저뿐인가요? ㅋㅋㅋ</span>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <input
+            type="text"
+            class="chat-input"
+            id="chat-input"
+            placeholder="아무 말이나 하소연해보세요..."
+            maxlength="50"
+          />
+          <button class="chat-send" id="chat-send">고함지르기</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ===== 드롭다운 메뉴 기능 =====
+      const titleDropdown = document.getElementById("title-dropdown");
+      const titleBtn = document.getElementById("title-btn");
+      const titleMenu = document.getElementById("title-menu");
+
+      titleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        titleMenu.classList.toggle("show");
+        titleDropdown.classList.toggle("open");
+      });
+
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest(".title-dropdown")) {
+          if (titleMenu.classList.contains("show")) {
+            titleMenu.classList.remove("show");
+            titleDropdown.classList.remove("open");
+          }
+        }
+      });
+
+      // ===== 클릭 로직 =====
+      const knockSoundWords = ["쾅!", "쿵쿵!", "철컥!", "쾅쾅쾅!", "쿵!"];
+
+      const characterImages = [
+        "img/main_01.svg",
+        "img/main_02.svg",
+        "img/main_03.svg",
+        "img/main_04.svg",
+        "img/main_05.svg",
+      ];
+
+      const dialogueWords = [
+        "미친 사람들 상대하느라 지쳤다.",
+        "열어줘유...",
+        "내가 정신병에게로 간다.",
+        "터벅.. 터벅..",
+        "정신 상태가 안 좋아졌어요.",
+        "그냥 제발 이라는 기분을 느낌",
+        "와~ 정신병 미쳤네~",
+        "죷내 괴롭다",
+        "♡레전드 정신병♡",
+        "100% 정신병",
+        "정신병원 입원 5분전...",
+        "저 왔어요 (정신병)",
+        "지랄 시작",
+        "왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지?",
+        "하... ㅆ발진짜눈물이...",
+        "정병인을 고려해주자...",
+        "우리 다들 조금씩은 정병이 있으니까~",
+        "자살할거임",
+        "부활할거임. 다시자살할거임.",
+        "난 어떻게 해야 하지∙∙∙?",
+        "폐급도 살아야죠 씨발 폐급도 사람인데 그럼",
+        "지능 0 모드",
+        "죄송합니다 아무래도 안될것같습니다",
+        "열심히 사는 사람이 너무 많다",
+        "나... 힘들다 진짜",
+        "정신병자들 상대하느라 지쳤다.",
+        "나 취직. 밥이랑 약 나오는 곳. 정신병원.",
+        "저는그만정신을잃고말았습니다",
+        "뭐가좋다고 쳐웃고다녀",
+        "의지를잃음",
+        "더는 견디기 어렵다",
+        "정신승리도 승리랍니다",
+        "너무 떨린당~♡ 치가 떨려",
+        "그러니까.. 내 미래가 나한테 달려있다고요?",
+        "서울대 나온 사람? 나 서울대 정신과 폐쇄병동 출신이야",
+        "오늘 진짜 한새끼만 걸려봐라",
+        "그냥 진짜 바지에 똥싸버리고 싶네",
+        "같이 죽으실분",
+        "존나빡치는 점: 존나빡침",
+        "떨어지는것도 계속 떨어지니까 중독되네요",
+        "그냥 가라... 다친다...",
+        "요즘 제가 밀고 있는 게 있는데요. 그건 바로 사람입니다^^",
+        "did you just 비웃어 me man ?",
+        "제발 씨발 그냥 제발 이라는 기분을 느낌 제발 은 이제 감정임",
+        "다죽자",
+        "이거 좀 심각한데요....정신병원각입니다..",
+        "내 자신의 의지로. 죽자···.",
+        "적당히좀하자 더건들면 boom될거같은데",
+        "맞담배피실분구해요",
+        "성(격) 실(패) 함",
+      ];
+
+      const door = document.getElementById("door-wrapper");
+      const doorImg = document.getElementById("door-img");
+      const fxPool = document.getElementById("fx-pool");
+      const userKnocksEl = document.getElementById("user-knocks");
+      const characterTalkEl = document.getElementById("character-talk");
+      const characterImgEl = document.getElementById("character-img");
+
+      let userKnocks = 0;
+
+      door.addEventListener("click", function () {
+        userKnocks += 1;
+        userKnocksEl.innerText = userKnocks.toLocaleString();
+
+        if (userKnocks >= 500) {
+          doorImg.src = "img/Level.06.svg";
+          doorImg.style.transform = "scale(1.25)";
+        } else if (userKnocks >= 300) {
+          doorImg.src = "img/Level.05.svg";
+          doorImg.style.transform = "scale(1.15)";
+        } else if (userKnocks >= 150) {
+          doorImg.src = "img/Level.04.svg";
+          doorImg.style.transform = "scale(1)";
+        } else if (userKnocks >= 50) {
+          doorImg.src = "img/Level.03.svg";
+          doorImg.style.transform = "scale(1)";
+        } else if (userKnocks >= 20) {
+          doorImg.src = "img/Level.02.svg";
+          doorImg.style.transform = "scale(1)";
+        } else {
+          doorImg.src = "img/Level.1.svg";
+          doorImg.style.transform = "scale(1)";
+        }
+
+        door.classList.remove("shake");
+        void door.offsetWidth;
+        door.classList.add("shake");
+
+        characterTalkEl.innerText =
+          dialogueWords[Math.floor(Math.random() * dialogueWords.length)];
+
+        characterImgEl.src =
+          characterImages[Math.floor(Math.random() * characterImages.length)];
+
+        const fx = document.createElement("div");
+        fx.className = "knock-fx";
+        fx.innerText =
+          knockSoundWords[Math.floor(Math.random() * knockSoundWords.length)];
+
+        fx.style.left = Math.random() * 50 + 25 + "%";
+        fx.style.top = Math.random() * 20 + 35 + "%";
+
+        fxPool.appendChild(fx);
+
+        setTimeout(() => fx.remove(), 1200);
+
+        if (navigator.vibrate) navigator.vibrate(40);
+      });
+
+      const liveCountEl = document.getElementById("live-count");
+      setInterval(() => {
+        const currentCount = parseInt(liveCountEl.innerText.replace(/,/g, ""));
+        const change = Math.floor(Math.random() * 11) - 5;
+        liveCountEl.innerText = (currentCount + change).toLocaleString();
+      }, 2500);
+
+      // ===== 채팅 로직 =====
+      const chatDrawer = document.getElementById("chat-drawer");
+      document.getElementById("open-chat-btn").addEventListener("click", () => {
+        chatDrawer.classList.add("open");
+      });
+      document
+        .getElementById("close-chat-btn")
+        .addEventListener("click", () => {
+          chatDrawer.classList.remove("open");
+        });
+
+      const chatMsgs = document.getElementById("chat-messages");
+      const chatInput = document.getElementById("chat-input");
+      const chatSend = document.getElementById("chat-send");
+
+      function addChatMessage(name, text) {
+        const div = document.createElement("div");
+        div.className = "chat-msg";
+        div.innerHTML = `<span class="msg-name">${name}</span><span class="msg-text">${text}</span>`;
+        chatMsgs.appendChild(div);
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
+      }
+
+      chatSend.addEventListener("click", () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        addChatMessage("나(환자)", text.replace(/</g, "&lt;"));
+        chatInput.value = "";
+      });
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") chatSend.click();
+      });
+
+      const dummyChats = [
+        "진짜 퇴사 마렵다",
+        "문 열어주세요 제발 ㅠㅠ",
+        "쾅쾅쾅쾅쾅쾅",
+        "다들 여기서 뭐하시는 거에요 ㅋㅋㅋ",
+        "점심 뭐 먹지?",
+        "아 팀장님 진짜 킹받네",
+        "주식 물린 거 언제 복구되냐",
+        "살려주세요 살려주세요",
+        "나만 이상한 거 아니지?",
+      ];
+
+      setInterval(() => {
+        if (Math.random() > 0.6) {
+          const randomId = Math.floor(Math.random() * 899) + 100;
+          const randomMsg =
+            dummyChats[Math.floor(Math.random() * dummyChats.length)];
+          addChatMessage(`익명_${randomId}`, randomMsg);
+        }
+      }, 3500);
+    </script>
+  </body>
+</html>

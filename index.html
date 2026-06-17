@@ -780,25 +780,35 @@
       }
 
       function handleChatSend() {
-        if (sendLocked) return;
+        if (sendLocked || isComposing) return;
         sendLocked = true;
         requestAnimationFrame(() => {
           sendLocked = false;
         });
 
         const text = chatInput.value.trim();
-        if (!text) return;
+        if (!text) {
+          chatInput.value = "";
+          return;
+        }
         addChatMessage("나(환자)", text.replace(/</g, "&lt;"));
         chatInput.value = "";
+        chatInput.blur();
         scheduleDoctorReply();
       }
 
       chatSend.addEventListener("click", handleChatSend);
       chatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !isComposing) {
           e.preventDefault();
           handleChatSend();
         }
+      });
+      chatInput.addEventListener("compositionstart", () => {
+        isComposing = true;
+      });
+      chatInput.addEventListener("compositionend", () => {
+        isComposing = false;
       });
 
       const doctorReplies = [

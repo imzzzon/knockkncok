@@ -42,11 +42,6 @@ function shouldIgnore(filePath) {
   return ignoredFiles.some(ignored => filePath.includes(ignored));
 }
 
-// 파일 경로 정규화
-function normalizePath(filePath) {
-  return filePath.split(path.sep).join('/');
-}
-
 // 변경사항 요약 생성
 function generateCommitMessage() {
   try {
@@ -102,20 +97,23 @@ function autoCommitAndPush() {
     
     console.log('\n🔄 변경사항 감지됨, 처리 중...');
     
+    // 모든 변경사항 먼저 add (stat 캐시 문제 해결)
+    try {
+      runGit('add -A');
+    } catch (e) {
+      // add 실패는 무시
+    }
+    
     // git status 확인
     const status = runGit('status --porcelain');
-    const hasChanges = status.split('\n').some(line => 
-      line && !shouldIgnore(line.substring(3))
-    );
+    const hasChanges = status.trim().length > 0;
     
     if (!hasChanges) {
       console.log('✨ 커밋할 변경사항이 없습니다.');
       return;
     }
     
-    // 모든 변경사항 add
-    runGit('add -A');
-    console.log('✅ 파일 추가됨');
+    console.log('✅ 변경사항 감지됨');
     
     // 커밋 메시지 생성 및 커밋
     const commitMessage = generateCommitMessage();

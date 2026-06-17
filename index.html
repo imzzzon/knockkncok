@@ -728,6 +728,7 @@
       let replyTimer = null;
       let currentTypingEl = null;
       let sendLocked = false;
+      let isComposing = false;
 
       function addChatMessage(name, text, isTyping = false) {
         const div = document.createElement("div");

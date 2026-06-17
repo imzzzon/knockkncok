@@ -37,7 +37,8 @@
         margin: 0;
         padding: 0;
         background-color: #ffffff !important;
-        overflow: hidden;
+        overflow-x: visible;
+        overflow-y: hidden;
         touch-action: none;
       }
 
@@ -48,19 +49,17 @@
         justify-content: center;
         height: 100vh;
         height: 100dvh;
-        overflow: hidden;
       }
 
       .app-container {
-        width: 100%;
+        width: min(100%, 420px);
         max-width: 420px;
         height: 100dvh;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         position: relative;
-        overflow-x: visible;
-        overflow-y: hidden;
+        overflow: visible;
         background-color: #ffffff;
       }
 

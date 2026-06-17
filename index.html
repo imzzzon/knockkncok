@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
     />
-    <title>온라인 대환장 폐쇄병동 - 자동 테스트</title>
+    <title>온라인 대환장 폐쇄병동</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css"
@@ -180,6 +180,7 @@
         }
       }
 
+      /* 💡 수정된 부분: margin을 auto로 주어 강제 중앙 정렬 보장 */
       .door-wrapper {
         height: 38vh;
         width: calc(38vh * 0.75);
@@ -192,10 +193,9 @@
         transition: transform 0.05s;
         display: flex;
         justify-content: center;
-        /* 💡 수정: center에서 flex-end로 변경하여 문이 항상 컨테이너 바닥에 붙게 설정 */
         align-items: flex-end;
         z-index: 10;
-        margin-top: 1vh;
+        margin: 1vh auto 0;
       }
       .door-wrapper:active {
         transform: scale(0.95);
@@ -221,13 +221,16 @@
         }
       }
 
-      /* 💡 수정: 병원 이미지가 덜컹거리지 않고 제자리에서 바뀌도록 설정 */
+      /* 💡 수정된 부분: position absolute로 띄워서 150% 크기라도 완벽하게 정중앙에 오게 맞춤 */
       .door-asset-img {
+        position: absolute;
+        bottom: 0;
+        left: -25%; /* 150% 크기이므로 남는 50%의 절반인 25%만큼 좌측으로 당김 */
         width: 150%;
         height: 150%;
         object-fit: contain;
-        object-position: bottom center; /* SVG 내부 비율이 달라도 바닥 기준으로 정렬 */
-        transform-origin: bottom center; /* 크기가 1.25배 커질 때 아래로 파고들지 않고 위로만 커지게 고정 */
+        object-position: bottom center;
+        transform-origin: bottom center;
         filter: grayscale(100%) contrast(1.2);
         pointer-events: none;
         user-select: none;
@@ -486,6 +489,7 @@
             </h1>
             <div id="title-menu" class="title-menu">
               <a href="#">🧑‍🧑‍🧒‍🧒 광장</a>
+            </div>
           </div>
 
           <p>🔥 현재 함께 두드리는 중: <span id="live-count">8,421</span>명</p>

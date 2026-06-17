@@ -1,180 +1,135 @@
 #!/usr/bin/env node
 
 const chokidar = require('chokidar');
-const { simpleGit } = require('simple-git');
-const path = require('path');
-const fs = require('fs');
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-const git = simpleGit();
 const ignoredFiles = ['.git', '.DS_Store', 'node_modules', '.vscode', 'package.json', 'package-lock.json', 'auto-commit.js'];
-const debounceTime = 2000; // 2초 대기
-const maxRetries = 3; // 최대 재시도 횟수
+const debounceTime = 3000; // 3초 대기
 let debounceTimer = null;
-let pendingChanges = new Set();
-let isProcessing = false;
+
+// git 명령 실행 (셸로 직접 실행)
+function runGit(command) {
+  try {
+    return execSync(`git ${command}`, { 
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf-8'
+    });
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+// git lock 파일 정리
+function cleanGitLock() {
+  const lockFile = '.git/index.lock';
+  let retries = 3;
+  while (retries > 0 && fs.existsSync(lockFile)) {
+    try {
+      fs.unlinkSync(lockFile);
+      break;
+    } catch (e) {
+      retries--;
+      if (retries === 0) throw e;
+    }
+  }
+}
+
+// 무시할 파일 확인
+function shouldIgnore(filePath) {
+  return ignoredFiles.some(ignored => filePath.includes(ignored));
+}
 
 // 파일 경로 정규화
 function normalizePath(filePath) {
   return filePath.split(path.sep).join('/');
 }
 
-// 무시할 파일인지 확인
-function shouldIgnore(filePath) {
-  const normalized = normalizePath(filePath);
-  return ignoredFiles.some(ignored => normalized.includes(ignored));
-}
-
-// git lock 파일 정리
-function cleanGitLock() {
-  try {
-    const lockFile = '.git/index.lock';
-    if (fs.existsSync(lockFile)) {
-      fs.unlinkSync(lockFile);
-      console.log('🧹 git lock 파일 정리됨');
-    }
-  } catch (error) {
-    console.error('⚠️ lock 파일 정리 실패:', error.message);
-  }
-}
-
 // 변경사항 요약 생성
-async function generateCommitMessage() {
+function generateCommitMessage() {
   try {
-    const status = await git.status();
+    const statusOutput = runGit('status --porcelain');
     
-    const added = status.created.filter(f => !shouldIgnore(f));
-    const modified = status.modified.filter(f => !shouldIgnore(f));
-    const deleted = status.deleted.filter(f => !shouldIgnore(f));
-    const renamed = status.renamed.filter(f => !shouldIgnore(f[0]));
+    let added = 0, modified = 0, deleted = 0;
+    const files = [];
+    
+    statusOutput.split('\n').forEach(line => {
+      if (!line) return;
+      const status = line.substring(0, 2);
+      const filePath = line.substring(3);
+      
+      if (shouldIgnore(filePath)) return;
+      
+      if (status[0] === '?' || status === 'A ' || status === 'AM') added++;
+      else if (status === 'M ' || status === 'MM') modified++;
+      else if (status === ' D' || status === 'D ') deleted++;
+      
+      files.push({ status, path: filePath });
+    });
     
     let message = '📝 자동 커밋: ';
     const changes = [];
     
-    if (added.length > 0) {
-      changes.push(`추가 ${added.length}개`);
-    }
-    if (modified.length > 0) {
-      changes.push(`수정 ${modified.length}개`);
-    }
-    if (deleted.length > 0) {
-      changes.push(`삭제 ${deleted.length}개`);
-    }
-    if (renamed.length > 0) {
-      changes.push(`이름변경 ${renamed.length}개`);
+    if (added > 0) changes.push(`추가 ${added}개`);
+    if (modified > 0) changes.push(`수정 ${modified}개`);
+    if (deleted > 0) changes.push(`삭제 ${deleted}개`);
+    
+    message += (changes.length > 0 ? changes.join(', ') : '변경사항 업데이트');
+    
+    // 구체적인 파일 목록
+    if (files.length > 0) {
+      message += '\n\n변경된 파일:\n';
+      files.forEach(f => {
+        const statusMap = { 'M ': '[수정]', 'A ': '[추가]', ' D': '[삭제]', '??': '[추가]' };
+        const s = statusMap[f.status] || '[변경]';
+        message += `${s} ${f.path}\n`;
+      });
     }
     
-    message += changes.join(', ');
-    
-    // 구체적인 파일 목록 추가
-    let details = '\n\n변경된 파일:\n';
-    if (added.length > 0) details += `[추가] ${added.join(', ')}\n`;
-    if (modified.length > 0) details += `[수정] ${modified.join(', ')}\n`;
-    if (deleted.length > 0) details += `[삭제] ${deleted.join(', ')}\n`;
-    if (renamed.length > 0) details += `[이름변경] ${renamed.map(r => `${r[0]} → ${r[1]}`).join(', ')}\n`;
-    
-    return message + details;
+    return message;
   } catch (error) {
     return '📝 자동 커밋: 변경사항 업데이트';
   }
 }
 
-// 자동 커밋 및 푸시 (재시도 로직 포함)
-async function autoCommitAndPush(attempt = 1) {
+// 자동 커밋 및 푸시
+function autoCommitAndPush() {
   try {
-    // git lock 파일 정리
+    // lock 정리
     cleanGitLock();
     
-    if (isProcessing) {
-      console.log('⏳ 이미 처리 중입니다...');
-      return;
-    }
+    console.log('\n🔄 변경사항 감지됨, 처리 중...');
     
-    isProcessing = true;
-    console.log(`\n🔄 변경사항 감지됨, 처리 중... (시도 ${attempt}/${maxRetries})`);
+    // git status 확인
+    const status = runGit('status --porcelain');
+    const hasChanges = status.split('\n').some(line => 
+      line && !shouldIgnore(line.substring(3))
+    );
     
-    const status = await git.status();
-    
-    // 변경사항이 없으면 return
-    if (status.files.length === 0) {
+    if (!hasChanges) {
       console.log('✨ 커밋할 변경사항이 없습니다.');
-      isProcessing = false;
       return;
     }
     
-    // 추적되지 않은 파일 무시
-    const filesToAdd = status.files
-      .filter(f => !shouldIgnore(f.path))
-      .map(f => f.path);
+    // 모든 변경사항 add
+    runGit('add -A');
+    console.log('✅ 파일 추가됨');
     
-    if (filesToAdd.length === 0) {
-      console.log('✨ 커밋할 변경사항이 없습니다.');
-      isProcessing = false;
-      return;
-    }
-    
-    // 변경된 파일 add
-    await git.add(filesToAdd);
-    console.log(`✅ 파일 추가됨: ${filesToAdd.join(', ')}`);
-    
-    // 커밋 메시지 생성
-    const commitMessage = await generateCommitMessage();
-    
-    // 커밋
-    const commit = await git.commit(commitMessage);
-    console.log(`✅ 커밋 완료: ${commit.commit}`);
+    // 커밋 메시지 생성 및 커밋
+    const commitMessage = generateCommitMessage();
+    runGit(`commit -m "${commitMessage.split('\n')[0]}"`);
+    console.log(`✅ 커밋 완료`);
     console.log(commitMessage);
     
-    // 푸시 (재시도 로직)
-    try {
-      await git.push(['origin', 'main']);
-      console.log('✅ 푸시 완료!');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-      isProcessing = false;
-    } catch (pushError) {
-      console.error('❌ 푸시 실패:', pushError.message);
-      
-      // 리모트와의 불일치 가능성이 있으므로 pull 시도
-      if (pushError.message.includes('rejected')) {
-        console.log('🔄 리모트와 동기화 중...');
-        try {
-          await git.pull(['--no-rebase', 'origin', 'main']);
-          console.log('✅ 동기화 완료, 다시 푸시 시도...');
-          await git.push(['origin', 'main']);
-          console.log('✅ 푸시 완료!');
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-          isProcessing = false;
-        } catch (retryError) {
-          if (attempt < maxRetries) {
-            console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
-            isProcessing = false;
-            setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
-          } else {
-            console.error('❌ 최대 재시도 횟수 초과:', retryError.message);
-            isProcessing = false;
-          }
-        }
-      } else {
-        if (attempt < maxRetries) {
-          console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
-          isProcessing = false;
-          setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
-        } else {
-          console.error('❌ 최대 재시도 횟수 초과');
-          isProcessing = false;
-        }
-      }
-    }
+    // 푸시
+    runGit('push origin main');
+    console.log('✅ 푸시 완료!');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
   } catch (error) {
     console.error('❌ 오류 발생:', error.message);
-    isProcessing = false;
-    
-    // 일시적인 오류일 경우 재시도
-    if (attempt < maxRetries) {
-      console.log(`⚠️ 재시도 대기 중... (${attempt}/${maxRetries})`);
-      setTimeout(() => autoCommitAndPush(attempt + 1), 3000);
-    }
   }
 }
 
@@ -182,9 +137,9 @@ async function autoCommitAndPush(attempt = 1) {
 const watcher = chokidar.watch('.', {
   ignored: ignoredFiles.map(f => new RegExp(`(^|/)${f}($|/)`)),
   persistent: true,
-  ignoreInitial: true, // 초기 파일들은 무시
+  ignoreInitial: true,
   awaitWriteFinish: {
-    stabilityThreshold: 100,
+    stabilityThreshold: 200,
     pollInterval: 100
   }
 });
@@ -192,42 +147,36 @@ const watcher = chokidar.watch('.', {
 console.log('🚀 자동 커밋 감시 시작됨...');
 console.log('📁 파일 변경을 감지하면 자동으로 커밋되고 푸시됩니다.\n');
 
-watcher
-  .on('add', (filePath) => {
-    if (!shouldIgnore(filePath)) {
-      console.log(`📄 파일 추가: ${filePath}`);
-      pendingChanges.add(filePath);
-      scheduleCommit();
-    }
-  })
-  .on('change', (filePath) => {
-    if (!shouldIgnore(filePath)) {
-      console.log(`✏️ 파일 수정: ${filePath}`);
-      pendingChanges.add(filePath);
-      scheduleCommit();
-    }
-  })
-  .on('unlink', (filePath) => {
-    if (!shouldIgnore(filePath)) {
-      console.log(`🗑️ 파일 삭제: ${filePath}`);
-      pendingChanges.add(filePath);
-      scheduleCommit();
-    }
-  })
-  .on('error', (error) => {
-    console.error('❌ 감시 오류:', error);
-  });
+// 파일 변경 감지
+watcher.on('add', (filePath) => {
+  if (!shouldIgnore(filePath)) {
+    console.log(`📄 파일 추가: ${filePath}`);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(autoCommitAndPush, debounceTime);
+  }
+});
 
-// 디바운스: 마지막 변경 후 일정 시간 후 커밋
-function scheduleCommit() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    autoCommitAndPush();
-    pendingChanges.clear();
-  }, debounceTime);
-}
+watcher.on('change', (filePath) => {
+  if (!shouldIgnore(filePath)) {
+    console.log(`✏️ 파일 수정: ${filePath}`);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(autoCommitAndPush, debounceTime);
+  }
+});
 
-// 종료 시 감시 중지
+watcher.on('unlink', (filePath) => {
+  if (!shouldIgnore(filePath)) {
+    console.log(`🗑️ 파일 삭제: ${filePath}`);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(autoCommitAndPush, debounceTime);
+  }
+});
+
+watcher.on('error', (error) => {
+  console.error('❌ 감시 오류:', error);
+});
+
+// 종료 처리
 process.on('SIGINT', () => {
   console.log('\n\n🛑 감시 중지됨.');
   watcher.close();

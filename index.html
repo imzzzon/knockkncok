@@ -192,7 +192,6 @@
         transition: transform 0.05s;
         display: flex;
         justify-content: center;
-        /* 💡 수정: center에서 flex-end로 변경하여 문이 항상 컨테이너 바닥에 붙게 설정 */
         align-items: flex-end;
         z-index: 10;
         margin-top: 1vh;
@@ -221,13 +220,12 @@
         }
       }
 
-      /* 💡 수정: 병원 이미지가 덜컹거리지 않고 제자리에서 바뀌도록 설정 */
       .door-asset-img {
         width: 150%;
         height: 150%;
         object-fit: contain;
-        object-position: bottom center; /* SVG 내부 비율이 달라도 바닥 기준으로 정렬 */
-        transform-origin: bottom center; /* 크기가 1.25배 커질 때 아래로 파고들지 않고 위로만 커지게 고정 */
+        object-position: bottom center;
+        transform-origin: bottom center;
         filter: grayscale(100%) contrast(1.2);
         pointer-events: none;
         user-select: none;
@@ -292,15 +290,7 @@
         font-size: min(3.5vw, 12px);
         text-align: center;
         width: 85%;
-        word-break: break-word;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        line-height: 1.3;
-        max-height: 80%;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        word-break: keep-all;
       }
 
       .open-chat-btn {
@@ -590,6 +580,7 @@
         "img/main_05.svg",
       ];
 
+      // 💡 수정된 부분: CSV 원본의 줄바꿈(\n) 및 따옴표 기호를 완벽하게 반영한 배열입니다.
       const dialogueWords = [
         "미친 사람들 상대하느라 지쳤다.",
         "열어줘유...",
@@ -604,7 +595,7 @@
         "정신병원 입원 5분전...",
         "저 왔어요 (정신병)",
         "지랄 시작",
-        "왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지? 왜지?",
+        "왜지? 왜지? 왜지? 왜지? 왜지?\n왜지? 왜지? 왜지? 왜지?",
         "하... ㅆ발진짜눈물이...",
         "정병인을 고려해주자...",
         "우리 다들 조금씩은 정병이 있으니까~",
@@ -617,27 +608,27 @@
         "열심히 사는 사람이 너무 많다",
         "나... 힘들다 진짜",
         "정신병자들 상대하느라 지쳤다.",
-        "나 취직. 밥이랑 약 나오는 곳. 정신병원.",
+        "나 취직.\n밥이랑 약 나오는 곳. 정신병원.",
         "저는그만정신을잃고말았습니다",
         "뭐가좋다고 쳐웃고다녀",
         "의지를잃음",
         "더는 견디기 어렵다",
         "정신승리도 승리랍니다",
-        "너무 떨린당~♡ 치가 떨려",
+        '너무 떨린당~♡ "치가 떨려"',
         "그러니까.. 내 미래가 나한테 달려있다고요?",
-        "서울대 나온 사람? 나 서울대 정신과 폐쇄병동 출신이야",
+        "서울대 나온 사람?\n나 서울대 정신과 폐쇄병동 출신이야",
         "오늘 진짜 한새끼만 걸려봐라",
         "그냥 진짜 바지에 똥싸버리고 싶네",
         "같이 죽으실분",
         "존나빡치는 점: 존나빡침",
         "떨어지는것도 계속 떨어지니까 중독되네요",
         "그냥 가라... 다친다...",
-        "요즘 제가 밀고 있는 게 있는데요. 그건 바로 사람입니다^^",
+        "요즘 제가 밀고 있는 게 있는데요.\n그건 바로 사람입니다^^",
         "did you just 비웃어 me man ?",
         "제발 씨발 그냥 제발 이라는 기분을 느낌 제발 은 이제 감정임",
         "다죽자",
         "이거 좀 심각한데요....정신병원각입니다..",
-        "내 자신의 의지로. 죽자···.",
+        "내 자신의 의지로.\n죽자···.",
         "적당히좀하자 더건들면 boom될거같은데",
         "맞담배피실분구해요",
         "성(격) 실(패) 함",
@@ -680,6 +671,7 @@
         void door.offsetWidth;
         door.classList.add("shake");
 
+        // 텍스트 교체
         characterTalkEl.innerText =
           dialogueWords[Math.floor(Math.random() * dialogueWords.length)];
 

@@ -182,6 +182,7 @@ async function autoCommitAndPush(attempt = 1) {
 const watcher = chokidar.watch('.', {
   ignored: ignoredFiles.map(f => new RegExp(`(^|/)${f}($|/)`)),
   persistent: true,
+  ignoreInitial: true, // 초기 파일들은 무시
   awaitWriteFinish: {
     stabilityThreshold: 100,
     pollInterval: 100

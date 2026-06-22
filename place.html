@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+    />
+    <title>광장 - 온라인 대환장 폐쇄병동</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css"
+    />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --border: #111111;
+        --gray-light: #eeeeee;
+        --gray-mid: #999999;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff !important;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      body {
+        color: var(--text);
+        font-family: "Pretendard", sans-serif;
+        display: flex;
+        justify-content: center;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .app-container {
+        width: 100%;
+        max-width: 420px;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+        background-color: #ffffff;
+        border-left: 2px solid var(--border);
+        border-right: 2px solid var(--border);
+      }
+
+      .header {
+        padding: 3vh 16px;
+        text-align: center;
+        position: relative;
+        width: 100%;
+        flex-shrink: 0;
+        z-index: 100;
+        background-color: var(--bg);
+      }
+
+      .title-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .title-btn {
+        font-size: 22px;
+        font-weight: 900;
+        margin-bottom: 8px;
+        letter-spacing: -1px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .title-btn:active {
+        opacity: 0.7;
+      }
+      .title-arrow {
+        font-size: 14px;
+        color: var(--border);
+        transition: transform 0.2s;
+      }
+      .title-dropdown.open .title-arrow {
+        transform: rotate(180deg);
+      }
+
+      .title-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+        z-index: 200;
+        min-width: 220px;
+        text-align: left;
+        margin-top: 5px;
+      }
+      .title-menu.show {
+        display: flex;
+        flex-direction: column;
+      }
+      .title-menu a {
+        padding: 12px 16px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+        border-bottom: 1px dashed var(--gray-light);
+      }
+      .title-menu a:hover {
+        background-color: var(--gray-light);
+      }
+      .title-menu a:last-child {
+        border-bottom: none;
+      }
+
+      /* 💡 추가: 드롭다운 아래에 들어갈 텍스트 스타일 */
+      .header p {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-mid);
+        margin-top: 4px;
+      }
+
+      .square-area {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        background-color: #fdfdfd;
+      }
+
+      .hospital-building {
+        position: absolute;
+        /* 💡 수정: 뱃지 영역이 사라졌으므로 병원 건물을 다시 살짝 위로 올림 */
+        top: 8%;
+        left: 5%;
+        width: 180px;
+        height: auto;
+        filter: grayscale(100%) contrast(1.2);
+        z-index: 34;
+        pointer-events: none;
+      }
+
+      .char-wrapper {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: none;
+      }
+
+      .char-img {
+        width: 50px;
+        height: auto;
+        filter: grayscale(100%) contrast(1.2);
+      }
+
+      .me-text {
+        font-family: "Galmuri9", sans-serif;
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <div class="header">
+        <div class="title-dropdown" id="title-dropdown">
+          <h1 id="title-btn" class="title-btn">
+            광장 <span class="title-arrow">▼</span>
+          </h1>
+          <div id="title-menu" class="title-menu">
+            <a href="index.html">🚪 병원으로 돌아가기</a>
+          </div>
+        </div>
+        <p>🔥 현재 함께 두드리는 중: <span id="live-count">8,407</span>명</p>
+      </div>
+
+      <div class="square-area" id="square-area">
+        <img
+          src="img/Level.1.svg"
+          alt="레전드 정신병원"
+          class="hospital-building"
+          id="hospital-building"
+        />
+      </div>
+    </div>
+
+    <script>
+      // 접속자 수 랜덤 변동 로직
+      const liveCountEl = document.getElementById("live-count");
+      setInterval(() => {
+        const currentCount = parseInt(liveCountEl.innerText.replace(/,/g, ""));
+        const change = Math.floor(Math.random() * 7) - 3;
+        liveCountEl.innerText = (currentCount + change).toLocaleString();
+      }, 3000);
+
+      // 드롭다운 메뉴 기능
+      const titleDropdown = document.getElementById("title-dropdown");
+      const titleBtn = document.getElementById("title-btn");
+      const titleMenu = document.getElementById("title-menu");
+
+      titleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        titleMenu.classList.toggle("show");
+        titleDropdown.classList.toggle("open");
+      });
+
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest(".title-dropdown")) {
+          if (titleMenu.classList.contains("show")) {
+            titleMenu.classList.remove("show");
+            titleDropdown.classList.remove("open");
+          }
+        }
+      });
+
+      // ===== 광장 캐릭터 생성 및 배치 로직 =====
+      const squareArea = document.getElementById("square-area");
+
+      const characterImages = [
+        "img/main_01.svg",
+        "img/main_02.svg",
+        "img/main_03.svg",
+        "img/main_04.svg",
+        "img/main_05.svg",
+        "img/sub_01.svg",
+        "img/sub_02.svg",
+        "img/sub_03.svg",
+        "img/sub_04.svg",
+        "img/sub_05.svg",
+      ];
+
+      const numCharacters = 30;
+      const myCharacterIndex = Math.floor(Math.random() * numCharacters);
+
+      let imagePool = [];
+      const copiesPerImage = Math.ceil(numCharacters / characterImages.length);
+
+      for (let i = 0; i < copiesPerImage; i++) {
+        imagePool = imagePool.concat(characterImages);
+      }
+
+      for (let i = imagePool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
+      }
+
+      const placedPositions = [];
+
+      for (let i = 0; i < numCharacters; i++) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "char-wrapper";
+
+        const isMe = i === myCharacterIndex;
+
+        if (isMe) {
+          const meText = document.createElement("div");
+          meText.className = "me-text";
+          meText.innerText = "나";
+          wrapper.appendChild(meText);
+        }
+
+        const imgEl = document.createElement("img");
+        imgEl.className = "char-img";
+        imgEl.src = imagePool[i];
+
+        if (isMe) {
+          imgEl.style.filter =
+            "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
+        }
+
+        wrapper.appendChild(imgEl);
+        squareArea.appendChild(wrapper);
+
+        let startX, startY;
+        let attempts = 0;
+        const maxAttempts = 100;
+
+        while (attempts < maxAttempts) {
+          startX = Math.random() * 90 + 5;
+          startY = Math.random() * 60 + 35;
+
+          let isValid = true;
+
+          for (let pos of placedPositions) {
+            const diffX = Math.abs(pos.x - startX);
+            const diffY = Math.abs(pos.y - startY);
+
+            if (diffX < 7 && diffY < 8) {
+              isValid = false;
+              break;
+            }
+          }
+
+          if (isValid) {
+            break;
+          }
+          attempts++;
+        }
+
+        placedPositions.push({ x: startX, y: startY });
+
+        wrapper.style.left = startX + "%";
+        wrapper.style.top = startY + "%";
+
+        const scale = 0.5 + ((startY - 35) / 60) * 0.4;
+        wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
+        wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
+      }
+    </script>
+  </body>
+</html>

@@ -483,7 +483,7 @@
               대환장 폐쇄병동 <span class="title-arrow">▼</span>
             </h1>
             <div id="title-menu" class="title-menu">
-              <a href="#">🧑‍🧑‍🧒‍🧒 광장</a>
+              <a href="place.html">🧑‍🧑‍🧒‍🧒 광장</a>
             </div>
           </div>
 
@@ -636,7 +636,6 @@
       const characterImgEl = document.getElementById("character-img");
 
       let userKnocks = 0;
-      // 💡 추가된 부분: 다음 번 캐릭터와 말풍선이 바뀔 목표 클릭 수를 3~5 사이의 랜덤 값으로 초기 설정합니다.
       let nextChangeCount = Math.floor(Math.random() * 3) + 3;
 
       door.addEventListener("click", function () {
@@ -667,7 +666,6 @@
         void door.offsetWidth;
         door.classList.add("shake");
 
-        // 💡 추가된 부분: 현재 클릭 수가 목표 클릭 수(nextChangeCount)에 도달했는지 확인합니다.
         if (userKnocks >= nextChangeCount) {
           characterTalkEl.innerText =
             dialogueWords[Math.floor(Math.random() * dialogueWords.length)];
@@ -675,7 +673,6 @@
           characterImgEl.src =
             characterImages[Math.floor(Math.random() * characterImages.length)];
 
-          // 💡 다음 번 캐릭터가 바뀔 새로운 목표치를 현재 클릭 수에서 3~5회 더한 값으로 갱신합니다.
           nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
         }
 

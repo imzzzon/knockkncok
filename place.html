@@ -136,7 +136,6 @@
         border-bottom: none;
       }
 
-      /* 💡 추가: 드롭다운 아래에 들어갈 텍스트 스타일 */
       .header p {
         font-size: 14px;
         font-weight: 600;
@@ -153,7 +152,6 @@
 
       .hospital-building {
         position: absolute;
-        /* 💡 수정: 뱃지 영역이 사라졌으므로 병원 건물을 다시 살짝 위로 올림 */
         top: 8%;
         left: 5%;
         width: 180px;
@@ -271,6 +269,7 @@
       }
 
       const placedPositions = [];
+      const movingCharacters = [];
 
       for (let i = 0; i < numCharacters; i++) {
         const wrapper = document.createElement("div");
@@ -297,6 +296,7 @@
         wrapper.appendChild(imgEl);
         squareArea.appendChild(wrapper);
 
+        // 초기 겹침 방지 배치
         let startX, startY;
         let attempts = 0;
         const maxAttempts = 100;
@@ -311,6 +311,7 @@
             const diffX = Math.abs(pos.x - startX);
             const diffY = Math.abs(pos.y - startY);
 
+            // 초기 생성 시 간격 보장 (X 7%, Y 8%)
             if (diffX < 7 && diffY < 8) {
               isValid = false;
               break;
@@ -331,7 +332,94 @@
         const scale = 0.5 + ((startY - 35) / 60) * 0.4;
         wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
         wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
+
+        // 💡 수정된 부분: 캐릭터마다 서로 다른 기본 속도 부여 (더 빠르고 다채롭게)
+        // 속도 범위를 대폭 늘려 정신없는 느낌을 강화합니다.
+        const baseSpeed = Math.random() * 0.2 + 0.05; // 0.05 ~ 0.25의 고유 속도
+        const angle = Math.random() * Math.PI * 2; // 무작위 시작 방향 360도
+
+        movingCharacters.push({
+          element: wrapper,
+          x: startX,
+          y: startY,
+          baseSpeed: baseSpeed,
+          vx: Math.cos(angle) * baseSpeed,
+          vy: Math.sin(angle) * baseSpeed,
+          isMe: isMe,
+        });
       }
+
+      // ===== 💡 캐릭터 이동 애니메이션 로직 =====
+      function animateCharacters() {
+        for (let i = 0; i < movingCharacters.length; i++) {
+          let char = movingCharacters[i];
+
+          // 💡 더 잦은 방향 전환과 속도 변화 (정신없는 움직임 극대화)
+          // 4% 확률로 갑자기 새로운 방향과 속도(기본 속도의 0.5~1.5배)로 튑니다.
+          if (Math.random() < 0.04) {
+            const angle = Math.random() * Math.PI * 2;
+            const speedModifier = Math.random() * 1.0 + 0.5; // 갑자기 빨라지거나 느려짐
+            char.vx = Math.cos(angle) * (char.baseSpeed * speedModifier);
+            char.vy = Math.sin(angle) * (char.baseSpeed * speedModifier);
+          }
+
+          let nextX = char.x + char.vx;
+          let nextY = char.y + char.vy;
+          let hitBoundary = false;
+
+          // 화면 밖으로 나가지 않도록 튕기기
+          if (nextX < 5 || nextX > 95) {
+            char.vx *= -1;
+            hitBoundary = true;
+          }
+          if (nextY < 35 || nextY > 95) {
+            char.vy *= -1;
+            hitBoundary = true;
+          }
+
+          // 벽에 부딪히지 않았을 때만 다른 캐릭터와의 충돌 검사를 합니다.
+          if (!hitBoundary) {
+            let isColliding = false;
+
+            // 💡 기존 충돌 조건 엄격하게 유지: 예정 좌표가 다른 캐릭터의 X 7%, Y 8% 간격을 침범하는가?
+            for (let j = 0; j < movingCharacters.length; j++) {
+              if (i === j) continue;
+              let other = movingCharacters[j];
+
+              let diffX = Math.abs(nextX - other.x);
+              let diffY = Math.abs(nextY - other.y);
+
+              if (diffX < 7 && diffY < 8) {
+                isColliding = true;
+                break;
+              }
+            }
+
+            if (isColliding) {
+              // 부딪힐 것 같으면 깜짝 놀란 듯이 즉시 반대로 방향을 꺾습니다.
+              char.vx *= -1;
+              char.vy *= -1;
+            } else {
+              // 안전하다면 이동 승인!
+              char.x = nextX;
+              char.y = nextY;
+            }
+          }
+
+          // DOM에 렌더링
+          char.element.style.left = char.x + "%";
+          char.element.style.top = char.y + "%";
+
+          // Y축이 변했으므로 원근감(Scale)과 겹침 순서(Z-index)도 실시간 갱신
+          const scale = 0.5 + ((char.y - 35) / 60) * 0.4;
+          char.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
+          char.element.style.zIndex = Math.floor(char.y) + (char.isMe ? 1 : 0);
+        }
+
+        requestAnimationFrame(animateCharacters);
+      }
+
+      animateCharacters();
     </script>
   </body>
 </html>

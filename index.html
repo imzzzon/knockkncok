@@ -543,7 +543,9 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import { connectPresence } from "./js/presence.mjs";
+
       // ===== 드롭다운 메뉴 기능 =====
       const titleDropdown = document.getElementById("title-dropdown");
       const titleBtn = document.getElementById("title-btn");
@@ -692,11 +694,20 @@
       });
 
       const liveCountEl = document.getElementById("live-count");
-      setInterval(() => {
-        const currentCount = parseInt(liveCountEl.innerText.replace(/,/g, ""));
-        const change = Math.floor(Math.random() * 11) - 5;
-        liveCountEl.innerText = (currentCount + change).toLocaleString();
-      }, 2500);
+
+      connectPresence({
+        page: "hospital",
+        onCountChange(count) {
+          liveCountEl.innerText = count.toLocaleString();
+        },
+        onStatusChange(status) {
+          if (status === "not-configured") {
+            console.warn(
+              "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
+            );
+          }
+        },
+      });
 
       // ===== 채팅 로직 =====
       const chatDrawer = document.getElementById("chat-drawer");

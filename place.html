@@ -208,14 +208,10 @@
       </div>
     </div>
 
-    <script>
-      // 접속자 수 랜덤 변동 로직
+    <script type="module">
+      import { connectPresence } from "./js/presence.mjs";
+
       const liveCountEl = document.getElementById("live-count");
-      setInterval(() => {
-        const currentCount = parseInt(liveCountEl.innerText.replace(/,/g, ""));
-        const change = Math.floor(Math.random() * 7) - 3;
-        liveCountEl.innerText = (currentCount + change).toLocaleString();
-      }, 3000);
 
       // 드롭다운 메뉴 기능
       const titleDropdown = document.getElementById("title-dropdown");
@@ -253,101 +249,145 @@
         "img/sub_05.svg",
       ];
 
-      const numCharacters = 30;
-      const myCharacterIndex = Math.floor(Math.random() * numCharacters);
-
-      let imagePool = [];
-      const copiesPerImage = Math.ceil(numCharacters / characterImages.length);
-
-      for (let i = 0; i < copiesPerImage; i++) {
-        imagePool = imagePool.concat(characterImages);
-      }
-
-      for (let i = imagePool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
-      }
-
-      const placedPositions = [];
       const movingCharacters = [];
+      const maxVisibleCharacters = 60;
+      let currentRenderedCount = 0;
 
-      for (let i = 0; i < numCharacters; i++) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "char-wrapper";
-
-        const isMe = i === myCharacterIndex;
-
-        if (isMe) {
-          const meText = document.createElement("div");
-          meText.className = "me-text";
-          meText.innerText = "나";
-          wrapper.appendChild(meText);
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
         }
 
-        const imgEl = document.createElement("img");
-        imgEl.className = "char-img";
-        imgEl.src = imagePool[i];
+        return array;
+      }
 
-        if (isMe) {
-          imgEl.style.filter =
-            "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
+      function buildImagePool(count) {
+        let imagePool = [];
+        const copiesPerImage = Math.ceil(count / characterImages.length);
+
+        for (let i = 0; i < copiesPerImage; i++) {
+          imagePool = imagePool.concat(characterImages);
         }
 
-        wrapper.appendChild(imgEl);
-        squareArea.appendChild(wrapper);
+        return shuffle(imagePool);
+      }
 
-        // 초기 겹침 방지 배치
-        let startX, startY;
-        let attempts = 0;
-        const maxAttempts = 100;
+      function renderCharacters(visitorCount) {
+        const scaledCount =
+          visitorCount <= 15 ? visitorCount : 15 + Math.floor(visitorCount / 5) - 3;
+        const numCharacters = Math.max(
+          1,
+          Math.min(scaledCount, maxVisibleCharacters),
+        );
 
-        while (attempts < maxAttempts) {
-          startX = Math.random() * 90 + 5;
-          startY = Math.random() * 60 + 35;
+        if (numCharacters === currentRenderedCount) return;
 
-          let isValid = true;
+        currentRenderedCount = numCharacters;
+        movingCharacters.length = 0;
 
-          for (let pos of placedPositions) {
-            const diffX = Math.abs(pos.x - startX);
-            const diffY = Math.abs(pos.y - startY);
+        squareArea
+          .querySelectorAll(".char-wrapper")
+          .forEach((character) => character.remove());
 
-            // 초기 생성 시 간격 보장 (X 7%, Y 8%)
-            if (diffX < 7 && diffY < 8) {
-              isValid = false;
+        const myCharacterIndex = Math.floor(Math.random() * numCharacters);
+        const imagePool = buildImagePool(numCharacters);
+        const placedPositions = [];
+
+        for (let i = 0; i < numCharacters; i++) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "char-wrapper";
+
+          const isMe = i === myCharacterIndex;
+
+          if (isMe) {
+            const meText = document.createElement("div");
+            meText.className = "me-text";
+            meText.innerText = "나";
+            wrapper.appendChild(meText);
+          }
+
+          const imgEl = document.createElement("img");
+          imgEl.className = "char-img";
+          imgEl.src = imagePool[i];
+
+          if (isMe) {
+            imgEl.style.filter =
+              "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
+          }
+
+          wrapper.appendChild(imgEl);
+          squareArea.appendChild(wrapper);
+
+          // 초기 겹침 방지 배치
+          let startX, startY;
+          let attempts = 0;
+          const maxAttempts = 100;
+
+          while (attempts < maxAttempts) {
+            startX = Math.random() * 90 + 5;
+            startY = Math.random() * 60 + 35;
+
+            let isValid = true;
+
+            for (let pos of placedPositions) {
+              const diffX = Math.abs(pos.x - startX);
+              const diffY = Math.abs(pos.y - startY);
+
+              // 초기 생성 시 간격 보장 (X 7%, Y 8%)
+              if (diffX < 7 && diffY < 8) {
+                isValid = false;
+                break;
+              }
+            }
+
+            if (isValid) {
               break;
             }
+            attempts++;
           }
 
-          if (isValid) {
-            break;
-          }
-          attempts++;
+          placedPositions.push({ x: startX, y: startY });
+
+          wrapper.style.left = startX + "%";
+          wrapper.style.top = startY + "%";
+
+          const scale = 0.5 + ((startY - 35) / 60) * 0.4;
+          wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
+          wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
+
+          // 캐릭터마다 서로 다른 기본 속도 부여
+          const baseSpeed = Math.random() * 0.2 + 0.05;
+          const angle = Math.random() * Math.PI * 2;
+
+          movingCharacters.push({
+            element: wrapper,
+            x: startX,
+            y: startY,
+            baseSpeed: baseSpeed,
+            vx: Math.cos(angle) * baseSpeed,
+            vy: Math.sin(angle) * baseSpeed,
+            isMe: isMe,
+          });
         }
-
-        placedPositions.push({ x: startX, y: startY });
-
-        wrapper.style.left = startX + "%";
-        wrapper.style.top = startY + "%";
-
-        const scale = 0.5 + ((startY - 35) / 60) * 0.4;
-        wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
-        wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
-
-        // 💡 수정된 부분: 캐릭터마다 서로 다른 기본 속도 부여 (더 빠르고 다채롭게)
-        // 속도 범위를 대폭 늘려 정신없는 느낌을 강화합니다.
-        const baseSpeed = Math.random() * 0.2 + 0.05; // 0.05 ~ 0.25의 고유 속도
-        const angle = Math.random() * Math.PI * 2; // 무작위 시작 방향 360도
-
-        movingCharacters.push({
-          element: wrapper,
-          x: startX,
-          y: startY,
-          baseSpeed: baseSpeed,
-          vx: Math.cos(angle) * baseSpeed,
-          vy: Math.sin(angle) * baseSpeed,
-          isMe: isMe,
-        });
       }
+
+      connectPresence({
+        page: "square",
+        onCountChange(count) {
+          liveCountEl.innerText = count.toLocaleString();
+          renderCharacters(count);
+        },
+        onStatusChange(status) {
+          if (status === "not-configured") {
+            console.warn(
+              "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
+            );
+          }
+        },
+      });
+
+      renderCharacters(1);
 
       // ===== 💡 캐릭터 이동 애니메이션 로직 =====
       function animateCharacters() {

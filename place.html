@@ -60,8 +60,7 @@
         position: relative;
         overflow: hidden;
         background-color: #ffffff;
-        border-left: 2px solid var(--border);
-        border-right: 2px solid var(--border);
+        border: none !important;
       }
 
       .header {
@@ -153,7 +152,9 @@
       .hospital-building {
         position: absolute;
         top: 8%;
-        left: 5%;
+        /* 💡 변경: 가로 중앙 정렬 스타일 적용 */
+        left: 50%;
+        transform: translateX(-50%);
         width: 180px;
         height: auto;
         filter: grayscale(100%) contrast(1.2);
@@ -275,7 +276,9 @@
 
       function renderCharacters(visitorCount) {
         const scaledCount =
-          visitorCount <= 15 ? visitorCount : 15 + Math.floor(visitorCount / 5) - 3;
+          visitorCount <= 15
+            ? visitorCount
+            : 15 + Math.floor(visitorCount / 5) - 3;
         const numCharacters = Math.max(
           1,
           Math.min(scaledCount, maxVisibleCharacters),
@@ -395,7 +398,7 @@
           let char = movingCharacters[i];
 
           // 💡 더 잦은 방향 전환과 속도 변화 (정신없는 움직임 극대화)
-          // 4% 확률로 갑자기 새로운 방향과 속도(기본 속도의 0.5~1.5배)로 튑니다.
+          // 4% 확률로 갑자기 새로운 방향과 속도(기본 속도의 0.5~1.5배)로 튊니다.
           if (Math.random() < 0.04) {
             const angle = Math.random() * Math.PI * 2;
             const speedModifier = Math.random() * 1.0 + 0.5; // 갑자기 빨라지거나 느려짐

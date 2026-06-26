@@ -236,6 +236,7 @@
 
       // ===== 광장 캐릭터 생성 및 배치 로직 =====
       const squareArea = document.getElementById("square-area");
+      let myCharacterAsset = null; // 💡 변경: 캐릭터 에셋 유지용 변수
 
       const characterImages = [
         "img/main_01.svg",
@@ -295,6 +296,12 @@
 
         const myCharacterIndex = Math.floor(Math.random() * numCharacters);
         const imagePool = buildImagePool(numCharacters);
+
+        // 💡 변경: 내 캐릭터 에셋이 없으면 랜덤으로 할당
+        if (!myCharacterAsset) {
+          myCharacterAsset = characterImages[Math.floor(Math.random() * characterImages.length)];
+        }
+        
         const placedPositions = [];
 
         for (let i = 0; i < numCharacters; i++) {
@@ -312,7 +319,8 @@
 
           const imgEl = document.createElement("img");
           imgEl.className = "char-img";
-          imgEl.src = imagePool[i];
+          // 💡 변경: 내 캐릭터면 저장된 에셋 사용
+          imgEl.src = isMe ? myCharacterAsset : imagePool[i];
 
           if (isMe) {
             imgEl.style.filter =

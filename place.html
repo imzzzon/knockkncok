@@ -171,13 +171,6 @@
         will-change: transform; /* 💡 변경: Safari 그림자 잔상 방지 최적화 */
       }
 
-      .char-scale-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        transform-origin: bottom center;
-      }
-
       .char-img {
         width: 50px;
         height: auto;
@@ -316,17 +309,13 @@
           const wrapper = document.createElement("div");
           wrapper.className = "char-wrapper";
 
-          // 💡 변경: 원근감 표현을 위한 스케일 컨테이너 추가
-          const scaleContainer = document.createElement("div");
-          scaleContainer.className = "char-scale-container";
-
           const isMe = i === myCharacterIndex;
 
           if (isMe) {
             const meText = document.createElement("div");
             meText.className = "me-text";
             meText.innerText = "나";
-            scaleContainer.appendChild(meText);
+            wrapper.appendChild(meText);
           }
 
           const imgEl = document.createElement("img");
@@ -339,8 +328,7 @@
               "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
           }
 
-          scaleContainer.appendChild(imgEl);
-          wrapper.appendChild(scaleContainer); // 💡 변경: 컨테이너 추가
+          wrapper.appendChild(imgEl);
           squareArea.appendChild(wrapper);
 
           // 초기 겹침 방지 배치
@@ -376,9 +364,8 @@
           wrapper.style.left = startX + "%";
           wrapper.style.top = startY + "%";
 
-          // 💡 변경: 위치와 스케일을 분리하여 적용
-          wrapper.style.transform = `translate(-50%, -100%)`;
-          scaleContainer.style.transform = `scale(${scale})`;
+          const scale = 0.5 + ((startY - 35) / 60) * 0.4;
+          wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
           wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
 
           // 캐릭터마다 서로 다른 기본 속도 부여
@@ -476,11 +463,8 @@
           char.element.style.top = char.y + "%";
 
           // Y축이 변했으므로 원근감(Scale)과 겹침 순서(Z-index)도 실시간 갱신
-          const scale = 0.4 + ((char.y - 35) / 60) * 0.7;
-          
-          // 💡 변경: 위치와 스케일을 분리하여 적용
-          char.element.style.transform = `translate(-50%, -100%)`;
-          char.element.querySelector('.char-scale-container').style.transform = `scale(${scale})`;
+          const scale = 0.5 + ((char.y - 35) / 60) * 0.4;
+          char.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
           char.element.style.zIndex = Math.floor(char.y) + (char.isMe ? 1 : 0);
         }
 

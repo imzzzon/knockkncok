@@ -215,6 +215,24 @@
 
       const liveCountEl = document.getElementById("live-count");
 
+      // ===== 병원 건물 에셋 동기화 로직 =====
+      const hospitalBuilding = document.getElementById("hospital-building");
+      const userKnocks = parseInt(localStorage.getItem("userKnocks") || "0", 10);
+
+      if (userKnocks >= 500) {
+        hospitalBuilding.src = "img/Level.06.svg";
+      } else if (userKnocks >= 300) {
+        hospitalBuilding.src = "img/Level.05.svg";
+      } else if (userKnocks >= 150) {
+        hospitalBuilding.src = "img/Level.04.svg";
+      } else if (userKnocks >= 50) {
+        hospitalBuilding.src = "img/Level.03.svg";
+      } else if (userKnocks >= 20) {
+        hospitalBuilding.src = "img/Level.02.svg";
+      } else {
+        hospitalBuilding.src = "img/Level.1.svg";
+      }
+
       // 드롭다운 메뉴 기능
       const titleDropdown = document.getElementById("title-dropdown");
       const titleBtn = document.getElementById("title-btn");

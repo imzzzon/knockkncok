@@ -81,72 +81,14 @@
         flex-shrink: 0;
       }
 
-      .title-dropdown {
-        position: relative;
-        display: inline-block;
-      }
-      .title-btn {
+      /* 드롭다운 제거된 깔끔한 타이틀 */
+      .title-text {
         font-size: 22px;
         font-weight: 900;
         margin-bottom: 8px;
         letter-spacing: -1px;
-        cursor: pointer;
-        user-select: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-      .title-btn:active {
-        opacity: 0.7;
-      }
-      .title-arrow {
-        font-size: 14px;
-        color: var(--border);
-        transition: transform 0.2s;
-      }
-      .title-dropdown.open .title-arrow {
-        transform: rotate(180deg);
-      }
-
-      .title-menu {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--bg);
-        border: 2px solid var(--border);
-        border-radius: 8px;
-        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
-        z-index: 200;
-        min-width: 220px;
-        text-align: left;
-        margin-top: 5px;
-      }
-      .title-menu.show {
-        display: flex;
-        flex-direction: column;
-      }
-      .title-menu a {
-        padding: 12px 16px;
-        color: var(--text);
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 800;
-        border-bottom: 1px dashed var(--gray-light);
-      }
-      .title-menu a:hover {
-        background-color: var(--gray-light);
-      }
-      .title-menu a:last-child {
-        border-bottom: none;
-      }
-      .coming-soon {
-        color: var(--gray-mid);
-        font-size: 12px;
-        font-weight: 500;
-        margin-left: 4px;
+        text-align: center;
+        transition: opacity 0.3s ease;
       }
 
       .header p {
@@ -154,6 +96,7 @@
         font-weight: 500;
         color: var(--gray-mid);
       }
+
       .live-badge {
         display: inline-block;
         background: var(--text);
@@ -164,6 +107,7 @@
         font-weight: 800;
         margin-top: 12px;
         animation: pulse 2s infinite;
+        transition: opacity 0.4s ease, transform 0.4s ease;
       }
       @keyframes pulse {
         0% {
@@ -180,6 +124,7 @@
         }
       }
 
+      /* 병원 문 줌아웃 트랜지션 */
       .door-wrapper {
         height: 38vh;
         width: calc(38vh * 0.75);
@@ -189,12 +134,13 @@
         min-width: 135px;
         position: relative;
         cursor: pointer;
-        transition: transform 0.05s;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
         display: flex;
         justify-content: center;
         align-items: flex-end;
         z-index: 10;
         margin: 1vh auto 0;
+        transform-origin: top center;
       }
       .door-wrapper:active {
         transform: scale(0.95);
@@ -220,6 +166,14 @@
         }
       }
 
+      /* 광장 모드일 때의 .door-wrapper 애니메이션 */
+      .app-container.square-mode .door-wrapper {
+        transform: translateY(11vh) scale(0.65);
+        cursor: default;
+        pointer-events: none;
+        z-index: 6;
+      }
+
       .door-asset-img {
         position: absolute;
         bottom: 0;
@@ -235,12 +189,26 @@
         transition: transform 0.3s ease;
       }
 
+      /* 병원 하단부 트랜지션 */
       .bottom-half {
         width: 100%;
         position: relative;
         padding-bottom: max(3vh, env(safe-area-inset-bottom));
         z-index: 20;
         flex-shrink: 0;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+      }
+      .app-container.square-mode .bottom-half {
+        transform: translateY(150px);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* 라이브 배지 축소/숨김 */
+      .app-container.square-mode .live-badge {
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
       }
 
       .character-area {
@@ -357,6 +325,81 @@
         }
       }
 
+      /* 광장 영역 */
+      .square-area {
+        position: absolute;
+        inset: 0;
+        top: 0;
+        background-color: #fdfdfd;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 5;
+        overflow: hidden;
+      }
+      .app-container.square-mode .square-area {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* 광장 이동 버튼 (img/place_button.png) */
+      .toggle-view-btn {
+        position: absolute;
+        bottom: max(3vh, env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 150;
+        outline: none;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
+      }
+      .toggle-view-btn:active {
+        transform: translateX(-50%) scale(0.92);
+      }
+      .toggle-view-btn img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.15));
+      }
+      .app-container.square-mode .toggle-view-btn {
+        transform: translateX(-50%) rotate(180deg);
+      }
+      .app-container.square-mode .toggle-view-btn:active {
+        transform: translateX(-50%) rotate(180deg) scale(0.92);
+      }
+
+      /* 광장 캐릭터 스타일 */
+      .char-wrapper {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: none;
+        will-change: transform;
+      }
+
+      .char-img {
+        width: 50px;
+        height: auto;
+        filter: grayscale(100%) contrast(1.2);
+      }
+
+      .me-text {
+        font-family: "Galmuri9", sans-serif;
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      /* 채팅 드로어 */
       .chat-drawer {
         position: absolute;
         bottom: 0;
@@ -478,15 +521,7 @@
 
       <div class="top-half">
         <div class="header">
-          <div class="title-dropdown" id="title-dropdown">
-            <h1 id="title-btn" class="title-btn">
-              대환장 폐쇄병동 <span class="title-arrow">▼</span>
-            </h1>
-            <div id="title-menu" class="title-menu">
-              <a href="place.html">🧑‍🧑‍🧒‍🧒 광장</a>
-            </div>
-          </div>
-
+          <h1 id="app-title" class="title-text">온라인 대환장 폐쇄병동</h1>
           <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
           <div class="live-badge">
             내가 두드린 횟수: <span id="user-knocks">0</span>회
@@ -502,6 +537,9 @@
           />
         </div>
       </div>
+
+      <!-- 광장 영역 -->
+      <div class="square-area" id="square-area"></div>
 
       <div class="bottom-half">
         <div class="character-area">
@@ -521,6 +559,11 @@
           👩🏻‍⚕️ 의사와 상담하기
         </button>
       </div>
+
+      <!-- 광장 이동 버튼 -->
+      <button class="toggle-view-btn" id="toggle-view-btn">
+        <img src="img/place_button.png" alt="광장 버튼" />
+      </button>
 
       <div class="chat-drawer" id="chat-drawer">
         <div class="chat-header">
@@ -545,26 +588,6 @@
 
     <script type="module">
       import { connectPresence } from "./js/presence.mjs";
-
-      // ===== 드롭다운 메뉴 기능 =====
-      const titleDropdown = document.getElementById("title-dropdown");
-      const titleBtn = document.getElementById("title-btn");
-      const titleMenu = document.getElementById("title-menu");
-
-      titleBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        titleMenu.classList.toggle("show");
-        titleDropdown.classList.toggle("open");
-      });
-
-      window.addEventListener("click", (e) => {
-        if (!e.target.closest(".title-dropdown")) {
-          if (titleMenu.classList.contains("show")) {
-            titleMenu.classList.remove("show");
-            titleDropdown.classList.remove("open");
-          }
-        }
-      });
 
       // ===== 클릭 로직 =====
       const knockSoundWords = ["쾅!", "쿵쿵!", "철컥!", "쾅쾅쾅!", "쿵!"];
@@ -637,32 +660,46 @@
       const characterTalkEl = document.getElementById("character-talk");
       const characterImgEl = document.getElementById("character-img");
 
-      let userKnocks = 0;
-      let nextChangeCount = Math.floor(Math.random() * 3) + 3;
+      // localStorage에서 이전 노크 횟수를 불러옵니다. 없으면 0으로 초기화합니다.
+      let userKnocks = parseInt(localStorage.getItem("userKnocks") || "0", 10);
+      let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
 
-      door.addEventListener("click", function () {
-        userKnocks += 1;
-        userKnocksEl.innerText = userKnocks.toLocaleString();
-
-        if (userKnocks >= 500) {
+      // 문 이미지 및 크기 업데이트 함수
+      function updateDoorImage(knocks) {
+        if (knocks >= 500) {
           doorImg.src = "img/Level.06.svg";
           doorImg.style.transform = "scale(1.25)";
-        } else if (userKnocks >= 300) {
+        } else if (knocks >= 300) {
           doorImg.src = "img/Level.05.svg";
           doorImg.style.transform = "scale(1.15)";
-        } else if (userKnocks >= 150) {
+        } else if (knocks >= 150) {
           doorImg.src = "img/Level.04.svg";
           doorImg.style.transform = "scale(1)";
-        } else if (userKnocks >= 50) {
+        } else if (knocks >= 50) {
           doorImg.src = "img/Level.03.svg";
           doorImg.style.transform = "scale(1)";
-        } else if (userKnocks >= 20) {
+        } else if (knocks >= 20) {
           doorImg.src = "img/Level.02.svg";
           doorImg.style.transform = "scale(1)";
         } else {
           doorImg.src = "img/Level.1.svg";
           doorImg.style.transform = "scale(1)";
         }
+      }
+
+      // 초기 로딩 시 누적 횟수 및 문 이미지 복원
+      userKnocksEl.innerText = userKnocks.toLocaleString();
+      updateDoorImage(userKnocks);
+
+      door.addEventListener("click", function () {
+        if (isSquareMode) return; // 광장 모드에서는 노크 불가
+
+        userKnocks += 1;
+        // 로컬스토리지에 저장하여 페이지 이동 시에도 유실되지 않도록 함
+        localStorage.setItem("userKnocks", userKnocks);
+        userKnocksEl.innerText = userKnocks.toLocaleString();
+
+        updateDoorImage(userKnocks);
 
         door.classList.remove("shake");
         void door.offsetWidth;
@@ -695,18 +732,263 @@
 
       const liveCountEl = document.getElementById("live-count");
 
-      connectPresence({
-        page: "hospital",
-        onCountChange(count) {
-          liveCountEl.innerText = count.toLocaleString();
-        },
-        onStatusChange(status) {
-          if (status === "not-configured") {
-            console.warn(
-              "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
-            );
+      // ===== Presence 동적 전환 로직 =====
+      let presenceConn = null;
+
+      function switchToHospitalPresence() {
+        if (presenceConn) presenceConn.disconnect();
+        presenceConn = connectPresence({
+          page: "hospital",
+          onCountChange(count) {
+            liveCountEl.innerText = count.toLocaleString();
+          },
+          onStatusChange(status) {
+            if (status === "not-configured") {
+              console.warn(
+                "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
+              );
+            }
+          },
+        });
+      }
+
+      function switchToSquarePresence() {
+        if (presenceConn) presenceConn.disconnect();
+        presenceConn = connectPresence({
+          page: "square",
+          onCountChange(count) {
+            liveCountEl.innerText = count.toLocaleString();
+            renderCharacters(count);
+          },
+          onStatusChange(status) {
+            if (status === "not-configured") {
+              console.warn(
+                "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
+              );
+            }
+          },
+        });
+      }
+
+      // 초기 Presence 설정
+      switchToHospitalPresence();
+
+      // ===== 광장 캐릭터 생성 및 배치 로직 =====
+      const squareArea = document.getElementById("square-area");
+      let myCharacterAsset = null;
+
+      const squareCharacterImages = [
+        "img/main_01.svg",
+        "img/main_02.svg",
+        "img/main_03.svg",
+        "img/main_04.svg",
+        "img/main_05.svg",
+        "img/sub_01.svg",
+        "img/sub_02.svg",
+        "img/sub_03.svg",
+        "img/sub_04.svg",
+        "img/sub_05.svg",
+      ];
+
+      const movingCharacters = [];
+      const maxVisibleCharacters = 60;
+      let currentRenderedCount = 0;
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function buildImagePool(count) {
+        let imagePool = [];
+        const copiesPerImage = Math.ceil(count / squareCharacterImages.length);
+        for (let i = 0; i < copiesPerImage; i++) {
+          imagePool = imagePool.concat(squareCharacterImages);
+        }
+        return shuffle(imagePool);
+      }
+
+      function renderCharacters(visitorCount) {
+        const scaledCount =
+          visitorCount <= 15
+            ? visitorCount
+            : 15 + Math.floor(visitorCount / 5) - 3;
+        const numCharacters = Math.max(
+          1,
+          Math.min(scaledCount, maxVisibleCharacters),
+        );
+
+        if (numCharacters === currentRenderedCount) return;
+
+        currentRenderedCount = numCharacters;
+        movingCharacters.length = 0;
+
+        squareArea
+          .querySelectorAll(".char-wrapper")
+          .forEach((character) => character.remove());
+
+        const myCharacterIndex = Math.floor(Math.random() * numCharacters);
+        const imagePool = buildImagePool(numCharacters);
+
+        if (!myCharacterAsset) {
+          myCharacterAsset = squareCharacterImages[Math.floor(Math.random() * squareCharacterImages.length)];
+        }
+        
+        const placedPositions = [];
+
+        for (let i = 0; i < numCharacters; i++) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "char-wrapper";
+
+          const isMe = i === myCharacterIndex;
+
+          if (isMe) {
+            const meText = document.createElement("div");
+            meText.className = "me-text";
+            meText.innerText = "나";
+            wrapper.appendChild(meText);
           }
-        },
+
+          const imgEl = document.createElement("img");
+          imgEl.className = "char-img";
+          imgEl.src = isMe ? myCharacterAsset : imagePool[i];
+
+          if (isMe) {
+            imgEl.style.filter =
+              "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
+          }
+
+          wrapper.appendChild(imgEl);
+          squareArea.appendChild(wrapper);
+
+          let startX, startY;
+          let attempts = 0;
+          const maxAttempts = 100;
+
+          while (attempts < maxAttempts) {
+            startX = Math.random() * 90 + 5;
+            startY = Math.random() * 60 + 35;
+
+            let isValid = true;
+            for (let pos of placedPositions) {
+              const diffX = Math.abs(pos.x - startX);
+              const diffY = Math.abs(pos.y - startY);
+              if (diffX < 7 && diffY < 8) {
+                isValid = false;
+                break;
+              }
+            }
+            if (isValid) {
+              break;
+            }
+            attempts++;
+          }
+
+          placedPositions.push({ x: startX, y: startY });
+
+          wrapper.style.left = startX + "%";
+          wrapper.style.top = startY + "%";
+
+          const scale = 0.5 + ((startY - 35) / 60) * 0.4;
+          wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
+          wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
+
+          const baseSpeed = Math.random() * 0.1 + 0.02;
+          const angle = Math.random() * Math.PI * 2;
+
+          movingCharacters.push({
+            element: wrapper,
+            x: startX,
+            y: startY,
+            baseSpeed: baseSpeed,
+            vx: Math.cos(angle) * baseSpeed,
+            vy: Math.sin(angle) * baseSpeed,
+            isMe: isMe,
+          });
+        }
+      }
+
+      // ===== 캐릭터 이동 애니메이션 로직 =====
+      function animateCharacters() {
+        if (!isSquareMode) return; // 광장 모드가 아닐 때는 자원 절약을 위해 루프 중지
+
+        for (let i = 0; i < movingCharacters.length; i++) {
+          let char = movingCharacters[i];
+
+          if (Math.random() < 0.04) {
+            const angle = Math.random() * Math.PI * 2;
+            const speedModifier = Math.random() * 0.5 + 0.5;
+            char.vx = Math.cos(angle) * (char.baseSpeed * speedModifier);
+            char.vy = Math.sin(angle) * (char.baseSpeed * speedModifier);
+          }
+
+          let nextX = char.x + char.vx;
+          let nextY = char.y + char.vy;
+          let hitBoundary = false;
+
+          if (nextX < 5 || nextX > 95) {
+            char.vx *= -1;
+            hitBoundary = true;
+          }
+          if (nextY < 35 || nextY > 95) {
+            char.vy *= -1;
+            hitBoundary = true;
+          }
+
+          if (!hitBoundary) {
+            let isColliding = false;
+            for (let j = 0; j < movingCharacters.length; j++) {
+              if (i === j) continue;
+              let other = movingCharacters[j];
+              let diffX = Math.abs(nextX - other.x);
+              let diffY = Math.abs(nextY - other.y);
+              if (diffX < 7 && diffY < 8) {
+                isColliding = true;
+                break;
+              }
+            }
+
+            if (isColliding) {
+              char.vx *= -1;
+              char.vy *= -1;
+            } else {
+              char.x = nextX;
+              char.y = nextY;
+            }
+          }
+
+          char.element.style.left = char.x + "%";
+          char.element.style.top = char.y + "%";
+
+          const scale = 0.5 + ((char.y - 35) / 60) * 0.4;
+          char.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
+          char.element.style.zIndex = Math.floor(char.y) + (char.isMe ? 1 : 0);
+        }
+
+        requestAnimationFrame(animateCharacters);
+      }
+
+      // ===== 페이지 심리스 전환 제어 =====
+      const toggleViewBtn = document.getElementById("toggle-view-btn");
+      const appContainer = document.querySelector(".app-container");
+      const appTitle = document.getElementById("app-title");
+      let isSquareMode = false;
+
+      toggleViewBtn.addEventListener("click", () => {
+        isSquareMode = !isSquareMode;
+        if (isSquareMode) {
+          appContainer.classList.add("square-mode");
+          appTitle.innerText = "광장";
+          switchToSquarePresence();
+          animateCharacters(); // 캐릭터 애니메이션 실행
+        } else {
+          appContainer.classList.remove("square-mode");
+          appTitle.innerText = "온라인 대환장 폐쇄병동";
+          switchToHospitalPresence();
+        }
       });
 
       // ===== 채팅 로직 =====

@@ -107,7 +107,9 @@
         font-weight: 800;
         margin-top: 12px;
         animation: pulse 2s infinite;
-        transition: opacity 0.4s ease, transform 0.4s ease;
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
       }
       @keyframes pulse {
         0% {
@@ -134,7 +136,9 @@
         min-width: 135px;
         position: relative;
         cursor: pointer;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+        transition:
+          transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.6s ease;
         display: flex;
         justify-content: center;
         align-items: flex-end;
@@ -196,7 +200,9 @@
         padding-bottom: max(3vh, env(safe-area-inset-bottom));
         z-index: 20;
         flex-shrink: 0;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+        transition:
+          transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.6s ease;
       }
       .app-container.square-mode .bottom-half {
         transform: translateY(150px);
@@ -357,7 +363,9 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease;
+        transition:
+          transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+          filter 0.2s ease;
       }
       .toggle-view-btn:active {
         transform: translateX(-50%) scale(0.92);
@@ -773,6 +781,14 @@
       // 초기 Presence 설정
       switchToHospitalPresence();
 
+      // ===== 💡 병원 건물 마진(투명 벽) 판별 함수 =====
+      // 캐릭터의 머리(윗부분)가 건물 에셋에 닿지 않도록 상단 영역(Y: 0~65%)을 전부 진입 불가 구역으로 묶었습니다.
+      function isInsideBuildingBounds(x, y) {
+        // x: 5 ~ 95 (가로 양끝 5% 제외하고 건물 영역으로 간주)
+        // y: 0 ~ 65 (상단부터 65% 지점까지 전부 마진으로 간주)
+        return x > 5 && x < 95 && y < 65;
+      }
+
       // ===== 광장 캐릭터 생성 및 배치 로직 =====
       const squareArea = document.getElementById("square-area");
       let myCharacterAsset = null;
@@ -834,9 +850,12 @@
         const imagePool = buildImagePool(numCharacters);
 
         if (!myCharacterAsset) {
-          myCharacterAsset = squareCharacterImages[Math.floor(Math.random() * squareCharacterImages.length)];
+          myCharacterAsset =
+            squareCharacterImages[
+              Math.floor(Math.random() * squareCharacterImages.length)
+            ];
         }
-        
+
         const placedPositions = [];
 
         for (let i = 0; i < numCharacters; i++) {
@@ -854,7 +873,9 @@
 
           const imgEl = document.createElement("img");
           imgEl.className = "char-img";
-          imgEl.src = isMe ? myCharacterAsset : imagePool[i];
+
+          const currentSrc = isMe ? myCharacterAsset : imagePool[i];
+          imgEl.src = currentSrc;
 
           if (isMe) {
             imgEl.style.filter =
@@ -865,26 +886,60 @@
           squareArea.appendChild(wrapper);
 
           let startX, startY;
-          let attempts = 0;
-          const maxAttempts = 100;
+          let orbitAngle = 0,
+            orbitSpeed = 0,
+            orbitRadiusX = 0,
+            orbitRadiusY = 0,
+            centerX = 50,
+            centerY = 82;
+          const isOrbiting = currentSrc && currentSrc.includes("sub_02.svg");
+          const isVertical = currentSrc && currentSrc.includes("sub_04.svg");
 
-          while (attempts < maxAttempts) {
-            startX = Math.random() * 90 + 5;
-            startY = Math.random() * 60 + 35;
+          if (isOrbiting) {
+            // 💡 궤도 도는 캐릭터도 절대 65% 위로 안 올라가게 중심점 하향(82%) 및 반경 축소
+            orbitAngle = Math.random() * Math.PI * 2;
+            orbitSpeed = 0.005 + Math.random() * 0.005;
 
-            let isValid = true;
-            for (let pos of placedPositions) {
-              const diffX = Math.abs(pos.x - startX);
-              const diffY = Math.abs(pos.y - startY);
-              if (diffX < 7 && diffY < 8) {
-                isValid = false;
-                break;
+            const circleRadius = 70 + Math.random() * 20;
+            orbitRadiusX = circleRadius;
+            orbitRadiusY = circleRadius;
+
+            centerX = 50;
+            centerY = 82;
+
+            const W = squareArea.clientWidth || 360;
+            const H = squareArea.clientHeight || 500;
+
+            startX =
+              centerX + ((Math.cos(orbitAngle) * orbitRadiusX) / W) * 100;
+            startY =
+              centerY + ((Math.sin(orbitAngle) * orbitRadiusY) / H) * 100;
+          } else {
+            // 일반 및 수직 이동 캐릭터: 안전 구역(65~95%) 내에서만 스폰
+            let attempts = 0;
+            const maxAttempts = 100;
+
+            while (attempts < maxAttempts) {
+              startX = Math.random() * 90 + 5;
+              startY = Math.random() * 30 + 65; // 💡 65%부터 생성 (건물 마진을 피함)
+
+              if (isInsideBuildingBounds(startX, startY)) {
+                attempts++;
+                continue;
               }
+
+              let isValid = true;
+              for (let pos of placedPositions) {
+                const diffX = Math.abs(pos.x - startX);
+                const diffY = Math.abs(pos.y - startY);
+                if (diffX < 7 && diffY < 8) {
+                  isValid = false;
+                  break;
+                }
+              }
+              if (isValid) break;
+              attempts++;
             }
-            if (isValid) {
-              break;
-            }
-            attempts++;
           }
 
           placedPositions.push({ x: startX, y: startY });
@@ -892,20 +947,39 @@
           wrapper.style.left = startX + "%";
           wrapper.style.top = startY + "%";
 
-          const scale = 0.5 + ((startY - 35) / 60) * 0.4;
+          // 💡 Y 기준값이 달라졌으므로 스케일 계산식도 그에 맞춰 조정 (65~95 구간)
+          const scale = 0.5 + ((startY - 65) / 30) * 0.4;
           wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
           wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
 
           const baseSpeed = Math.random() * 0.1 + 0.02;
-          const angle = Math.random() * Math.PI * 2;
+          let vx = 0,
+            vy = 0;
+
+          if (isVertical) {
+            vx = 0;
+            vy = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
+          } else {
+            const angle = Math.random() * Math.PI * 2;
+            vx = Math.cos(angle) * baseSpeed;
+            vy = Math.sin(angle) * baseSpeed;
+          }
 
           movingCharacters.push({
             element: wrapper,
             x: startX,
             y: startY,
+            isOrbiting: isOrbiting,
+            isVertical: isVertical,
+            orbitAngle: orbitAngle,
+            orbitSpeed: orbitSpeed,
+            orbitRadiusX: orbitRadiusX,
+            orbitRadiusY: orbitRadiusY,
+            centerX: centerX,
+            centerY: centerY,
             baseSpeed: baseSpeed,
-            vx: Math.cos(angle) * baseSpeed,
-            vy: Math.sin(angle) * baseSpeed,
+            vx: vx,
+            vy: vy,
             isMe: isMe,
           });
         }
@@ -913,57 +987,121 @@
 
       // ===== 캐릭터 이동 애니메이션 로직 =====
       function animateCharacters() {
-        if (!isSquareMode) return; // 광장 모드가 아닐 때는 자원 절약을 위해 루프 중지
+        if (!isSquareMode) return;
 
         for (let i = 0; i < movingCharacters.length; i++) {
           let char = movingCharacters[i];
 
-          if (Math.random() < 0.04) {
-            const angle = Math.random() * Math.PI * 2;
-            const speedModifier = Math.random() * 0.5 + 0.5;
-            char.vx = Math.cos(angle) * (char.baseSpeed * speedModifier);
-            char.vy = Math.sin(angle) * (char.baseSpeed * speedModifier);
-          }
+          if (char.isOrbiting) {
+            char.orbitAngle += char.orbitSpeed;
 
-          let nextX = char.x + char.vx;
-          let nextY = char.y + char.vy;
-          let hitBoundary = false;
+            const W = squareArea.clientWidth || 360;
+            const H = squareArea.clientHeight || 500;
 
-          if (nextX < 5 || nextX > 95) {
-            char.vx *= -1;
-            hitBoundary = true;
-          }
-          if (nextY < 35 || nextY > 95) {
-            char.vy *= -1;
-            hitBoundary = true;
-          }
+            const dx_pct =
+              ((Math.cos(char.orbitAngle) * char.orbitRadiusX) / W) * 100;
+            const dy_pct =
+              ((Math.sin(char.orbitAngle) * char.orbitRadiusY) / H) * 100;
 
-          if (!hitBoundary) {
-            let isColliding = false;
-            for (let j = 0; j < movingCharacters.length; j++) {
-              if (i === j) continue;
-              let other = movingCharacters[j];
-              let diffX = Math.abs(nextX - other.x);
-              let diffY = Math.abs(nextY - other.y);
-              if (diffX < 7 && diffY < 8) {
-                isColliding = true;
-                break;
-              }
+            char.x = char.centerX + dx_pct;
+            char.y = char.centerY + dy_pct;
+          } else if (char.isVertical) {
+            let nextY = char.y + char.vy;
+            let hitBoundary = false;
+
+            // 💡 상단 튕김 기준선을 65%로 하향 (건물 마진을 뚫지 못함)
+            if (
+              nextY < 65 ||
+              nextY > 95 ||
+              isInsideBuildingBounds(char.x, nextY)
+            ) {
+              char.vy *= -1;
+              hitBoundary = true;
+              nextY = char.y + char.vy;
             }
 
-            if (isColliding) {
+            if (!hitBoundary) {
+              let isColliding = false;
+              for (let j = 0; j < movingCharacters.length; j++) {
+                if (i === j) continue;
+                let other = movingCharacters[j];
+                let diffX = Math.abs(char.x - other.x);
+                let diffY = Math.abs(nextY - other.y);
+                if (diffX < 7 && diffY < 8) {
+                  isColliding = true;
+                  break;
+                }
+              }
+
+              if (isColliding) {
+                char.vy *= -1;
+              } else {
+                char.y = nextY;
+              }
+            }
+          } else {
+            if (Math.random() < 0.04) {
+              const angle = Math.random() * Math.PI * 2;
+              const speedModifier = Math.random() * 0.5 + 0.5;
+              char.vx = Math.cos(angle) * (char.baseSpeed * speedModifier);
+              char.vy = Math.sin(angle) * (char.baseSpeed * speedModifier);
+            }
+
+            let nextX = char.x + char.vx;
+            let nextY = char.y + char.vy;
+            let hitBoundary = false;
+
+            // 1. 화면 바깥벽 및 💡 상단 65% 튕김
+            if (nextX < 5 || nextX > 95) {
               char.vx *= -1;
+              hitBoundary = true;
+            }
+            if (nextY < 65 || nextY > 95) {
               char.vy *= -1;
+              hitBoundary = true;
+            }
+
+            // 2. 추가적인 병원 마진 차단
+            if (isInsideBuildingBounds(nextX, char.y)) {
+              char.vx *= -1;
+              hitBoundary = true;
+            }
+            if (isInsideBuildingBounds(char.x, nextY)) {
+              char.vy *= -1;
+              hitBoundary = true;
+            }
+
+            if (!hitBoundary) {
+              let isColliding = false;
+              for (let j = 0; j < movingCharacters.length; j++) {
+                if (i === j) continue;
+                let other = movingCharacters[j];
+                let diffX = Math.abs(nextX - other.x);
+                let diffY = Math.abs(nextY - other.y);
+                if (diffX < 7 && diffY < 8) {
+                  isColliding = true;
+                  break;
+                }
+              }
+
+              if (isColliding) {
+                char.vx *= -1;
+                char.vy *= -1;
+              } else {
+                char.x = nextX;
+                char.y = nextY;
+              }
             } else {
-              char.x = nextX;
-              char.y = nextY;
+              char.x += char.vx;
+              char.y += char.vy;
             }
           }
 
           char.element.style.left = char.x + "%";
           char.element.style.top = char.y + "%";
 
-          const scale = 0.5 + ((char.y - 35) / 60) * 0.4;
+          // 💡 스케일 및 z-index도 65~95 구간에 맞춰 자연스럽게 계산
+          const scale = 0.5 + ((char.y - 65) / 30) * 0.4;
           char.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
           char.element.style.zIndex = Math.floor(char.y) + (char.isMe ? 1 : 0);
         }

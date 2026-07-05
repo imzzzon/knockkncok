@@ -98,7 +98,10 @@
       }
 
       .live-badge {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 34px;
         background: var(--text);
         color: var(--bg);
         padding: 6px 12px;
@@ -106,7 +109,6 @@
         font-size: 13px;
         font-weight: 800;
         margin-top: 12px;
-        animation: pulse 2s infinite;
         transition:
           opacity 0.4s ease,
           transform 0.4s ease;
@@ -276,12 +278,14 @@
       }
 
       .open-chat-btn {
-        position: absolute;
-        bottom: max(2vh, env(safe-area-inset-bottom));
-        right: 4%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 34px;
+        margin-top: 10px;
         background: var(--text);
         color: var(--bg);
-        padding: 10px 16px;
+        padding: 0 16px;
         font-size: 13px;
         font-weight: 800;
         border: 2px solid var(--border);
@@ -534,6 +538,7 @@
           <div class="live-badge">
             내가 두드린 횟수: <span id="user-knocks">0</span>회
           </div>
+          <button class="open-chat-btn" id="open-chat-btn">진료받기</button>
         </div>
 
         <div class="door-wrapper" id="door-wrapper">
@@ -562,10 +567,6 @@
             <p class="talk-text" id="character-talk">나... 힘들다 진짜</p>
           </div>
         </div>
-
-        <button class="open-chat-btn" id="open-chat-btn">
-          👩🏻‍⚕️ 의사와 상담하기
-        </button>
       </div>
 
       <!-- 광장 이동 버튼 -->

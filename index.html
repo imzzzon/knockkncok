@@ -90,10 +90,52 @@
         transition: opacity 0.3s ease;
       }
 
-      .header p {
+      .status-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+      }
+
+      .status-row p {
         font-size: 14px;
         font-weight: 500;
         color: var(--gray-mid);
+        margin: 0;
+      }
+
+      .status-divider {
+        font-size: 14px;
+        color: var(--gray-mid);
+        opacity: 0.5;
+        font-weight: 300;
+      }
+
+      /* 진료받기 버튼 색상 및 굵기 수정 */
+      .open-chat-btn {
+        background: transparent;
+        border: none;
+        color: var(--gray-mid); /* 텍스트와 동일한 색상 적용 */
+        font-family: "Pretendard", sans-serif;
+        font-size: 14px;
+        font-weight: 500; /* 텍스트와 동일한 굵기 적용 */
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
+        white-space: nowrap;
+        transition: opacity 0.2s ease;
+      }
+
+      .open-chat-btn:active {
+        opacity: 0.5;
+      }
+
+      .app-container.square-mode .open-chat-btn,
+      .app-container.square-mode .status-divider {
+        display: none;
       }
 
       .live-badge {
@@ -113,20 +155,6 @@
         transition:
           opacity 0.4s ease,
           transform 0.4s ease;
-      }
-      @keyframes pulse {
-        0% {
-          opacity: 1;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 0.7;
-          transform: scale(0.98);
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
       }
 
       .door-wrapper {
@@ -275,36 +303,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-
-      .open-chat-btn {
-        position: absolute;
-        top: 12%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        height: 34px;
-        margin: 0;
-        background: var(--text);
-        color: var(--bg);
-        padding: 0 16px;
-        font-size: 13px;
-        font-weight: 800;
-        border: 2px solid var(--border);
-        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-        cursor: pointer;
-        z-index: 20;
-        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
-        white-space: nowrap;
-      }
-      .open-chat-btn:active {
-        transform: translate(-50%, -50%) scale(0.95);
-      }
-      .app-container.square-mode .open-chat-btn {
-        opacity: 0;
-        pointer-events: none;
       }
 
       #fx-pool {
@@ -582,14 +580,18 @@
       <div class="top-half">
         <div class="header">
           <h1 id="app-title" class="title-text">온라인 대환장 폐쇄병동</h1>
-          <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
+          <div class="status-row">
+            <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
+            <span class="status-divider">⏐</span>
+            <!-- 텍스트 내용에 ↘︎ 추가 -->
+            <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
+          </div>
           <div class="live-badge">
             내가 두드린 횟수: <span id="user-knocks">0</span>회
           </div>
         </div>
 
         <div class="door-wrapper" id="door-wrapper">
-          <button class="open-chat-btn" id="open-chat-btn">진료받기</button>
           <img
             src="img/Level.1.svg"
             class="door-asset-img"
@@ -646,7 +648,6 @@
 
       const knockSoundWords = ["쾅!", "쿵쿵!", "철컥!", "쾅쾅쾅!", "쿵!"];
 
-      // 병원 화면용 캐릭터 배열 (main_02, main_03 포함)
       const characterImages = [
         "img/main_01.svg",
         "img/main_02.svg",
@@ -831,7 +832,6 @@
       const squareArea = document.getElementById("square-area");
       let myCharacterAsset = null;
 
-      // 광장 모드용 캐릭터 배열 (main_02, main_03 제외됨)
       const squareCharacterImages = [
         "img/main_01.svg",
         "img/main_04.svg",

@@ -52,8 +52,8 @@
       }
 
       .app-container {
-        width: 100%;
-        max-width: 420px;
+        width: 100vw;
+        max-width: none;
         height: 100dvh;
         display: flex;
         flex-direction: column;
@@ -81,7 +81,6 @@
         flex-shrink: 0;
       }
 
-      /* 드롭다운 제거된 깔끔한 타이틀 */
       .title-text {
         font-size: 22px;
         font-weight: 900;
@@ -102,9 +101,11 @@
         align-items: center;
         justify-content: center;
         height: 34px;
-        background: var(--text);
-        color: var(--bg);
-        padding: 6px 12px;
+        min-width: auto;
+        background: transparent;
+        color: var(--text);
+        border: 2px solid var(--text);
+        padding: 6px 16px;
         border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
         font-size: 13px;
         font-weight: 800;
@@ -128,7 +129,6 @@
         }
       }
 
-      /* 병원 문 줌아웃 트랜지션 */
       .door-wrapper {
         height: 38vh;
         width: calc(38vh * 0.75);
@@ -172,7 +172,6 @@
         }
       }
 
-      /* 광장 모드일 때의 .door-wrapper 애니메이션 */
       .app-container.square-mode .door-wrapper {
         transform: translateY(11vh) scale(0.65);
         cursor: default;
@@ -195,7 +194,6 @@
         transition: transform 0.3s ease;
       }
 
-      /* 병원 하단부 트랜지션 */
       .bottom-half {
         width: 100%;
         position: relative;
@@ -206,13 +204,13 @@
           transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
           opacity 0.6s ease;
       }
+
       .app-container.square-mode .bottom-half {
-        transform: translateY(150px);
+        transform: translateY(100vh);
         opacity: 0;
         pointer-events: none;
       }
 
-      /* 라이브 배지 축소/숨김 */
       .app-container.square-mode .live-badge {
         opacity: 0;
         transform: translateY(-10px);
@@ -221,7 +219,9 @@
 
       .character-area {
         position: relative;
-        left: 6%;
+        left: 50%;
+        transform: translateX(calc(-50% - 50px));
+        margin-top: 40px;
         width: 30%;
         max-width: 120px;
         display: flex;
@@ -278,11 +278,15 @@
       }
 
       .open-chat-btn {
+        position: absolute;
+        top: 12%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         height: 34px;
-        margin-top: 10px;
+        margin: 0;
         background: var(--text);
         color: var(--bg);
         padding: 0 16px;
@@ -293,9 +297,14 @@
         cursor: pointer;
         z-index: 20;
         box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
       }
       .open-chat-btn:active {
-        transform: scale(0.95);
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+      .app-container.square-mode .open-chat-btn {
+        opacity: 0;
+        pointer-events: none;
       }
 
       #fx-pool {
@@ -335,7 +344,6 @@
         }
       }
 
-      /* 광장 영역 */
       .square-area {
         position: absolute;
         inset: 0;
@@ -352,7 +360,6 @@
         pointer-events: auto;
       }
 
-      /* 광장 이동 버튼 (img/place_button.png) */
       .toggle-view-btn {
         position: absolute;
         bottom: max(3vh, env(safe-area-inset-bottom));
@@ -387,7 +394,6 @@
         transform: translateX(-50%) rotate(180deg) scale(0.92);
       }
 
-      /* 광장 캐릭터 스타일 */
       .char-wrapper {
         position: absolute;
         display: flex;
@@ -403,6 +409,49 @@
         filter: grayscale(100%) contrast(1.2);
       }
 
+      .char-img.tremble {
+        animation: characterTremble 0.16s steps(2, end) infinite;
+        transform-origin: bottom center;
+        will-change: transform;
+      }
+
+      .char-img.stretch-y {
+        animation: characterStretchY 1.8s ease-in-out infinite;
+        transform-origin: bottom center;
+        will-change: transform;
+      }
+
+      @keyframes characterTremble {
+        0% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        25% {
+          transform: translate(-1px, 0.5px) rotate(-0.6deg);
+        }
+        50% {
+          transform: translate(1px, -0.5px) rotate(0.5deg);
+        }
+        75% {
+          transform: translate(-0.5px, -1px) rotate(-0.4deg);
+        }
+        100% {
+          transform: translate(0.5px, 0.5px) rotate(0.4deg);
+        }
+      }
+
+      @keyframes characterStretchY {
+        0%,
+        100% {
+          transform: scaleY(1);
+        }
+        35% {
+          transform: scaleY(1.18);
+        }
+        70% {
+          transform: scaleY(0.86);
+        }
+      }
+
       .me-text {
         font-family: "Galmuri9", sans-serif;
         font-size: 14px;
@@ -411,7 +460,6 @@
         margin-bottom: 4px;
       }
 
-      /* 채팅 드로어 */
       .chat-drawer {
         position: absolute;
         bottom: 0;
@@ -538,10 +586,10 @@
           <div class="live-badge">
             내가 두드린 횟수: <span id="user-knocks">0</span>회
           </div>
-          <button class="open-chat-btn" id="open-chat-btn">진료받기</button>
         </div>
 
         <div class="door-wrapper" id="door-wrapper">
+          <button class="open-chat-btn" id="open-chat-btn">진료받기</button>
           <img
             src="img/Level.1.svg"
             class="door-asset-img"
@@ -551,7 +599,6 @@
         </div>
       </div>
 
-      <!-- 광장 영역 -->
       <div class="square-area" id="square-area"></div>
 
       <div class="bottom-half">
@@ -569,7 +616,6 @@
         </div>
       </div>
 
-      <!-- 광장 이동 버튼 -->
       <button class="toggle-view-btn" id="toggle-view-btn">
         <img src="img/place_button.png" alt="광장 버튼" />
       </button>
@@ -598,9 +644,9 @@
     <script type="module">
       import { connectPresence } from "./js/presence.mjs";
 
-      // ===== 클릭 로직 =====
       const knockSoundWords = ["쾅!", "쿵쿵!", "철컥!", "쾅쾅쾅!", "쿵!"];
 
+      // 병원 화면용 캐릭터 배열 (main_02, main_03 포함)
       const characterImages = [
         "img/main_01.svg",
         "img/main_02.svg",
@@ -669,11 +715,11 @@
       const characterTalkEl = document.getElementById("character-talk");
       const characterImgEl = document.getElementById("character-img");
 
-      // localStorage에서 이전 노크 횟수를 불러옵니다. 없으면 0으로 초기화합니다.
-      let userKnocks = parseInt(localStorage.getItem("userKnocks") || "0", 10);
+      const USER_KNOCKS_STORAGE_KEY = "userKnocks";
+      let userKnocks = 0;
+      let unsavedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
 
-      // 문 이미지 및 크기 업데이트 함수
       function updateDoorImage(knocks) {
         if (knocks >= 500) {
           doorImg.src = "img/Level.06.svg";
@@ -696,16 +742,14 @@
         }
       }
 
-      // 초기 로딩 시 누적 횟수 및 문 이미지 복원
       userKnocksEl.innerText = userKnocks.toLocaleString();
       updateDoorImage(userKnocks);
 
       door.addEventListener("click", function () {
-        if (isSquareMode) return; // 광장 모드에서는 노크 불가
+        if (isSquareMode) return;
 
         userKnocks += 1;
-        // 로컬스토리지에 저장하여 페이지 이동 시에도 유실되지 않도록 함
-        localStorage.setItem("userKnocks", userKnocks);
+        unsavedKnocks += 1;
         userKnocksEl.innerText = userKnocks.toLocaleString();
 
         updateDoorImage(userKnocks);
@@ -741,7 +785,6 @@
 
       const liveCountEl = document.getElementById("live-count");
 
-      // ===== Presence 동적 전환 로직 =====
       let presenceConn = null;
 
       function switchToHospitalPresence() {
@@ -779,25 +822,18 @@
         });
       }
 
-      // 초기 Presence 설정
       switchToHospitalPresence();
 
-      // ===== 💡 병원 건물 마진(투명 벽) 판별 함수 =====
-      // 캐릭터의 머리(윗부분)가 건물 에셋에 닿지 않도록 상단 영역(Y: 0~65%)을 전부 진입 불가 구역으로 묶었습니다.
       function isInsideBuildingBounds(x, y) {
-        // x: 5 ~ 95 (가로 양끝 5% 제외하고 건물 영역으로 간주)
-        // y: 0 ~ 65 (상단부터 65% 지점까지 전부 마진으로 간주)
-        return x > 5 && x < 95 && y < 65;
+        return x > 15 && x < 85 && y < 60;
       }
 
-      // ===== 광장 캐릭터 생성 및 배치 로직 =====
       const squareArea = document.getElementById("square-area");
       let myCharacterAsset = null;
 
+      // 광장 모드용 캐릭터 배열 (main_02, main_03 제외됨)
       const squareCharacterImages = [
         "img/main_01.svg",
-        "img/main_02.svg",
-        "img/main_03.svg",
         "img/main_04.svg",
         "img/main_05.svg",
         "img/sub_01.svg",
@@ -877,6 +913,18 @@
 
           const currentSrc = isMe ? myCharacterAsset : imagePool[i];
           imgEl.src = currentSrc;
+          const isHorizontal = currentSrc && currentSrc.includes("main_01.svg");
+          const isStatic = currentSrc && currentSrc.includes("main_04.svg");
+          const isStretchingY =
+            currentSrc && currentSrc.includes("main_05.svg");
+          const isTrembling = currentSrc && currentSrc.includes("sub_05.svg");
+
+          if (isTrembling) {
+            imgEl.classList.add("tremble");
+          }
+          if (isStretchingY) {
+            imgEl.classList.add("stretch-y");
+          }
 
           if (isMe) {
             imgEl.style.filter =
@@ -892,12 +940,11 @@
             orbitRadiusX = 0,
             orbitRadiusY = 0,
             centerX = 50,
-            centerY = 82;
+            centerY = 75;
           const isOrbiting = currentSrc && currentSrc.includes("sub_02.svg");
           const isVertical = currentSrc && currentSrc.includes("sub_04.svg");
 
           if (isOrbiting) {
-            // 💡 궤도 도는 캐릭터도 절대 65% 위로 안 올라가게 중심점 하향(82%) 및 반경 축소
             orbitAngle = Math.random() * Math.PI * 2;
             orbitSpeed = 0.005 + Math.random() * 0.005;
 
@@ -906,7 +953,7 @@
             orbitRadiusY = circleRadius;
 
             centerX = 50;
-            centerY = 82;
+            centerY = 75;
 
             const W = squareArea.clientWidth || 360;
             const H = squareArea.clientHeight || 500;
@@ -916,13 +963,12 @@
             startY =
               centerY + ((Math.sin(orbitAngle) * orbitRadiusY) / H) * 100;
           } else {
-            // 일반 및 수직 이동 캐릭터: 안전 구역(65~95%) 내에서만 스폰
             let attempts = 0;
             const maxAttempts = 100;
 
             while (attempts < maxAttempts) {
               startX = Math.random() * 90 + 5;
-              startY = Math.random() * 30 + 65; // 💡 65%부터 생성 (건물 마진을 피함)
+              startY = Math.random() * 90 + 5;
 
               if (isInsideBuildingBounds(startX, startY)) {
                 attempts++;
@@ -948,8 +994,7 @@
           wrapper.style.left = startX + "%";
           wrapper.style.top = startY + "%";
 
-          // 💡 Y 기준값이 달라졌으므로 스케일 계산식도 그에 맞춰 조정 (65~95 구간)
-          const scale = 0.5 + ((startY - 65) / 30) * 0.4;
+          const scale = 0.5 + ((startY - 5) / 90) * 0.5;
           wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
           wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
 
@@ -957,7 +1002,14 @@
           let vx = 0,
             vy = 0;
 
-          if (isVertical) {
+          if (isStatic || isTrembling) {
+            vx = 0;
+            vy = 0;
+          } else if (isHorizontal) {
+            vx = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
+            vy = 0;
+            imgEl.style.transform = `scaleX(${vx >= 0 ? 1 : -1})`;
+          } else if (isVertical) {
             vx = 0;
             vy = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
           } else {
@@ -968,10 +1020,14 @@
 
           movingCharacters.push({
             element: wrapper,
+            image: imgEl,
             x: startX,
             y: startY,
             isOrbiting: isOrbiting,
+            isHorizontal: isHorizontal,
             isVertical: isVertical,
+            isStatic: isStatic,
+            isTrembling: isTrembling,
             orbitAngle: orbitAngle,
             orbitSpeed: orbitSpeed,
             orbitRadiusX: orbitRadiusX,
@@ -986,14 +1042,14 @@
         }
       }
 
-      // ===== 캐릭터 이동 애니메이션 로직 =====
       function animateCharacters() {
         if (!isSquareMode) return;
 
         for (let i = 0; i < movingCharacters.length; i++) {
           let char = movingCharacters[i];
 
-          if (char.isOrbiting) {
+          if (char.isStatic || char.isTrembling) {
+          } else if (char.isOrbiting) {
             char.orbitAngle += char.orbitSpeed;
 
             const W = squareArea.clientWidth || 360;
@@ -1010,9 +1066,8 @@
             let nextY = char.y + char.vy;
             let hitBoundary = false;
 
-            // 💡 상단 튕김 기준선을 65%로 하향 (건물 마진을 뚫지 못함)
             if (
-              nextY < 65 ||
+              nextY < 5 ||
               nextY > 95 ||
               isInsideBuildingBounds(char.x, nextY)
             ) {
@@ -1040,6 +1095,20 @@
                 char.y = nextY;
               }
             }
+          } else if (char.isHorizontal) {
+            let nextX = char.x + char.vx;
+
+            if (
+              nextX < 5 ||
+              nextX > 95 ||
+              isInsideBuildingBounds(nextX, char.y)
+            ) {
+              char.vx *= -1;
+              nextX = Math.max(5, Math.min(95, char.x + char.vx));
+            }
+
+            char.x = nextX;
+            char.image.style.transform = `scaleX(${char.vx >= 0 ? 1 : -1})`;
           } else {
             if (Math.random() < 0.04) {
               const angle = Math.random() * Math.PI * 2;
@@ -1052,17 +1121,15 @@
             let nextY = char.y + char.vy;
             let hitBoundary = false;
 
-            // 1. 화면 바깥벽 및 💡 상단 65% 튕김
             if (nextX < 5 || nextX > 95) {
               char.vx *= -1;
               hitBoundary = true;
             }
-            if (nextY < 65 || nextY > 95) {
+            if (nextY < 5 || nextY > 95) {
               char.vy *= -1;
               hitBoundary = true;
             }
 
-            // 2. 추가적인 병원 마진 차단
             if (isInsideBuildingBounds(nextX, char.y)) {
               char.vx *= -1;
               hitBoundary = true;
@@ -1101,8 +1168,7 @@
           char.element.style.left = char.x + "%";
           char.element.style.top = char.y + "%";
 
-          // 💡 스케일 및 z-index도 65~95 구간에 맞춰 자연스럽게 계산
-          const scale = 0.5 + ((char.y - 65) / 30) * 0.4;
+          const scale = 0.5 + ((char.y - 5) / 90) * 0.5;
           char.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
           char.element.style.zIndex = Math.floor(char.y) + (char.isMe ? 1 : 0);
         }
@@ -1110,19 +1176,33 @@
         requestAnimationFrame(animateCharacters);
       }
 
-      // ===== 페이지 심리스 전환 제어 =====
       const toggleViewBtn = document.getElementById("toggle-view-btn");
       const appContainer = document.querySelector(".app-container");
       const appTitle = document.getElementById("app-title");
       let isSquareMode = false;
 
+      function savePendingKnocks() {
+        if (unsavedKnocks <= 0) return;
+
+        const savedKnocks = parseInt(
+          localStorage.getItem(USER_KNOCKS_STORAGE_KEY) || "0",
+          10,
+        );
+        const totalKnocks =
+          (Number.isNaN(savedKnocks) ? 0 : savedKnocks) + unsavedKnocks;
+
+        localStorage.setItem(USER_KNOCKS_STORAGE_KEY, totalKnocks);
+        unsavedKnocks = 0;
+      }
+
       toggleViewBtn.addEventListener("click", () => {
+        savePendingKnocks();
         isSquareMode = !isSquareMode;
         if (isSquareMode) {
           appContainer.classList.add("square-mode");
           appTitle.innerText = "광장";
           switchToSquarePresence();
-          animateCharacters(); // 캐릭터 애니메이션 실행
+          animateCharacters();
         } else {
           appContainer.classList.remove("square-mode");
           appTitle.innerText = "온라인 대환장 폐쇄병동";
@@ -1130,17 +1210,19 @@
         }
       });
 
-      // ===== 채팅 로직 =====
       const chatDrawer = document.getElementById("chat-drawer");
-      document.getElementById("open-chat-btn").addEventListener("click", () => {
-        chatDrawer.classList.add("open");
-        if (!hasOpenedChat) {
-          showDoctorTypingThenMessage(
-            "안녕하세요. 어디가 아프셔서 오셨을까요?",
-          );
-          hasOpenedChat = true;
-        }
-      });
+      document
+        .getElementById("open-chat-btn")
+        .addEventListener("click", (e) => {
+          e.stopPropagation();
+          chatDrawer.classList.add("open");
+          if (!hasOpenedChat) {
+            showDoctorTypingThenMessage(
+              "안녕하세요. 어디가 아프셔서 오셨을까요?",
+            );
+            hasOpenedChat = true;
+          }
+        });
       document
         .getElementById("close-chat-btn")
         .addEventListener("click", () => {

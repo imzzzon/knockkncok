@@ -79,6 +79,7 @@
         position: relative;
         width: 100%;
         flex-shrink: 0;
+        z-index: 100; /* 수정 1: 세로 폭이 좁을 때 두드린 횟수 영역이 건물에 가려지지 않도록 최상단 고정 */
       }
 
       .title-text {
@@ -112,14 +113,13 @@
         font-weight: 300;
       }
 
-      /* 진료받기 버튼 색상 및 굵기 수정 */
       .open-chat-btn {
         background: transparent;
         border: none;
-        color: var(--gray-mid); /* 텍스트와 동일한 색상 적용 */
+        color: var(--gray-mid);
         font-family: "Pretendard", sans-serif;
         font-size: 14px;
-        font-weight: 500; /* 텍스트와 동일한 굵기 적용 */
+        font-weight: 500;
         text-decoration: underline;
         text-underline-offset: 2px;
         cursor: pointer;
@@ -204,7 +204,7 @@
         transform: translateY(11vh) scale(0.65);
         cursor: default;
         pointer-events: none;
-        z-index: 6;
+        z-index: 65; /* 수정 3: 광장 모드에서 건물 레이어 높이를 올려 캐릭터의 앞뒤 원근감이 자연스럽게 해결되게 함 */
       }
 
       .door-asset-img {
@@ -470,7 +470,7 @@
         flex-direction: column;
         transform: translateY(100%);
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 100;
+        z-index: 200; /* 수정 2: 광장 이동 버튼(150)보다 레이어를 높여서 채팅창 위에 버튼이 안 뜨도록 설정 */
         box-shadow: 0px -5px 15px rgba(0, 0, 0, 0.1);
       }
       .chat-drawer.open {
@@ -583,7 +583,6 @@
           <div class="status-row">
             <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
             <span class="status-divider">⏐</span>
-            <!-- 텍스트 내용에 ↘︎ 추가 -->
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
           <div class="live-badge">
@@ -826,7 +825,8 @@
       switchToHospitalPresence();
 
       function isInsideBuildingBounds(x, y) {
-        return x > 15 && x < 85 && y < 60;
+        // 수정 3: 건물과 아예 겹치지 않게 안전 구역(마진)을 더 넓게 확장
+        return x > 10 && x < 90 && y < 65;
       }
 
       const squareArea = document.getElementById("square-area");
@@ -940,7 +940,8 @@
             orbitRadiusX = 0,
             orbitRadiusY = 0,
             centerX = 50,
-            centerY = 75;
+            centerY = 85;
+
           const isOrbiting = currentSrc && currentSrc.includes("sub_02.svg");
           const isVertical = currentSrc && currentSrc.includes("sub_04.svg");
 
@@ -948,12 +949,13 @@
             orbitAngle = Math.random() * Math.PI * 2;
             orbitSpeed = 0.005 + Math.random() * 0.005;
 
-            const circleRadius = 70 + Math.random() * 20;
+            // 수정 3: 궤도를 도는 캐릭터들이 건물 쪽(상단)으로 가지 않도록 타원으로 변경하고 중심축을 내림
+            const circleRadius = 50 + Math.random() * 20;
             orbitRadiusX = circleRadius;
-            orbitRadiusY = circleRadius;
+            orbitRadiusY = circleRadius * 0.4;
 
             centerX = 50;
-            centerY = 75;
+            centerY = 82;
 
             const W = squareArea.clientWidth || 360;
             const H = squareArea.clientHeight || 500;

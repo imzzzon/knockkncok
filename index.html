@@ -79,7 +79,7 @@
         position: relative;
         width: 100%;
         flex-shrink: 0;
-        z-index: 100; /* 수정 1: 세로 폭이 좁을 때 두드린 횟수 영역이 건물에 가려지지 않도록 최상단 고정 */
+        z-index: 100;
       }
 
       .title-text {
@@ -204,7 +204,7 @@
         transform: translateY(11vh) scale(0.65);
         cursor: default;
         pointer-events: none;
-        z-index: 65; /* 수정 3: 광장 모드에서 건물 레이어 높이를 올려 캐릭터의 앞뒤 원근감이 자연스럽게 해결되게 함 */
+        z-index: 65;
       }
 
       .door-asset-img {
@@ -470,7 +470,7 @@
         flex-direction: column;
         transform: translateY(100%);
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 200; /* 수정 2: 광장 이동 버튼(150)보다 레이어를 높여서 채팅창 위에 버튼이 안 뜨도록 설정 */
+        z-index: 200;
         box-shadow: 0px -5px 15px rgba(0, 0, 0, 0.1);
       }
       .chat-drawer.open {
@@ -825,12 +825,10 @@
       switchToHospitalPresence();
 
       function isInsideBuildingBounds(x, y) {
-        // 수정 3: 건물과 아예 겹치지 않게 안전 구역(마진)을 더 넓게 확장
         return x > 10 && x < 90 && y < 65;
       }
 
       const squareArea = document.getElementById("square-area");
-      let myCharacterAsset = null;
 
       const squareCharacterImages = [
         "img/main_01.svg",
@@ -845,23 +843,163 @@
 
       const movingCharacters = [];
       const maxVisibleCharacters = 60;
+
+      let myCharacterAsset = null;
+      let hasCreatedMe = false;
       let currentRenderedCount = 0;
 
-      function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
-      }
+      // 캐릭터 1개를 동적으로 추가하는 함수
+      function createCharacter(isMe) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "char-wrapper";
 
-      function buildImagePool(count) {
-        let imagePool = [];
-        const copiesPerImage = Math.ceil(count / squareCharacterImages.length);
-        for (let i = 0; i < copiesPerImage; i++) {
-          imagePool = imagePool.concat(squareCharacterImages);
+        if (isMe) {
+          const meText = document.createElement("div");
+          meText.className = "me-text";
+          meText.innerText = "나";
+          wrapper.appendChild(meText);
         }
-        return shuffle(imagePool);
+
+        const imgEl = document.createElement("img");
+        imgEl.className = "char-img";
+
+        if (isMe && !myCharacterAsset) {
+          myCharacterAsset =
+            squareCharacterImages[
+              Math.floor(Math.random() * squareCharacterImages.length)
+            ];
+        }
+
+        const currentSrc = isMe
+          ? myCharacterAsset
+          : squareCharacterImages[
+              Math.floor(Math.random() * squareCharacterImages.length)
+            ];
+        imgEl.src = currentSrc;
+
+        const isHorizontal = currentSrc && currentSrc.includes("main_01.svg");
+        const isStatic = currentSrc && currentSrc.includes("main_04.svg");
+        const isStretchingY = currentSrc && currentSrc.includes("main_05.svg");
+        const isTrembling = currentSrc && currentSrc.includes("sub_05.svg");
+
+        if (isTrembling) {
+          imgEl.classList.add("tremble");
+        }
+        if (isStretchingY) {
+          imgEl.classList.add("stretch-y");
+        }
+
+        if (isMe) {
+          imgEl.style.filter =
+            "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
+        }
+
+        wrapper.appendChild(imgEl);
+        squareArea.appendChild(wrapper);
+
+        let startX, startY;
+        let orbitAngle = 0,
+          orbitSpeed = 0,
+          orbitRadiusX = 0,
+          orbitRadiusY = 0,
+          centerX = 50,
+          centerY = 85;
+
+        const isOrbiting = currentSrc && currentSrc.includes("sub_02.svg");
+        const isVertical = currentSrc && currentSrc.includes("sub_04.svg");
+
+        if (isOrbiting) {
+          orbitAngle = Math.random() * Math.PI * 2;
+          orbitSpeed = 0.005 + Math.random() * 0.005;
+
+          const circleRadius = 50 + Math.random() * 20;
+          orbitRadiusX = circleRadius;
+          orbitRadiusY = circleRadius * 0.4;
+
+          centerX = 50;
+          centerY = 82;
+
+          const W = squareArea.clientWidth || 360;
+          const H = squareArea.clientHeight || 500;
+
+          startX = centerX + ((Math.cos(orbitAngle) * orbitRadiusX) / W) * 100;
+          startY = centerY + ((Math.sin(orbitAngle) * orbitRadiusY) / H) * 100;
+        } else {
+          let attempts = 0;
+          const maxAttempts = 100;
+
+          while (attempts < maxAttempts) {
+            startX = Math.random() * 90 + 5;
+            startY = Math.random() * 90 + 5;
+
+            if (isInsideBuildingBounds(startX, startY)) {
+              attempts++;
+              continue;
+            }
+
+            let isValid = true;
+            // 이미 생성된 기존 요소들과 겹치는지 체크
+            for (let pos of movingCharacters) {
+              const diffX = Math.abs(pos.x - startX);
+              const diffY = Math.abs(pos.y - startY);
+              if (diffX < 7 && diffY < 8) {
+                isValid = false;
+                break;
+              }
+            }
+            if (isValid) break;
+            attempts++;
+          }
+        }
+
+        wrapper.style.left = startX + "%";
+        wrapper.style.top = startY + "%";
+
+        const scale = 0.5 + ((startY - 5) / 90) * 0.5;
+        wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
+        wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
+
+        const baseSpeed = Math.random() * 0.1 + 0.02;
+        let vx = 0,
+          vy = 0;
+
+        if (isStatic || isTrembling) {
+          vx = 0;
+          vy = 0;
+        } else if (isHorizontal) {
+          vx = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
+          vy = 0;
+          imgEl.style.transform = `scaleX(${vx >= 0 ? 1 : -1})`;
+        } else if (isVertical) {
+          vx = 0;
+          vy = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
+        } else {
+          const angle = Math.random() * Math.PI * 2;
+          vx = Math.cos(angle) * baseSpeed;
+          vy = Math.sin(angle) * baseSpeed;
+        }
+
+        return {
+          element: wrapper,
+          image: imgEl,
+          x: startX,
+          y: startY,
+          isOrbiting: isOrbiting,
+          isHorizontal: isHorizontal,
+          isVertical: isVertical,
+          isStatic: isStatic,
+          isTrembling: isTrembling,
+          orbitAngle: orbitAngle,
+          orbitSpeed: orbitSpeed,
+          orbitRadiusX: orbitRadiusX,
+          orbitRadiusY: orbitRadiusY,
+          centerX: centerX,
+          centerY: centerY,
+          baseSpeed: baseSpeed,
+          vx: vx,
+          vy: vy,
+          isMe: isMe,
+        };
       }
 
       function renderCharacters(visitorCount) {
@@ -869,179 +1007,44 @@
           visitorCount <= 15
             ? visitorCount
             : 15 + Math.floor(visitorCount / 5) - 3;
-        const numCharacters = Math.max(
+        const targetCount = Math.max(
           1,
           Math.min(scaledCount, maxVisibleCharacters),
         );
 
-        if (numCharacters === currentRenderedCount) return;
+        if (targetCount === currentRenderedCount) return;
 
-        currentRenderedCount = numCharacters;
-        movingCharacters.length = 0;
-
-        squareArea
-          .querySelectorAll(".char-wrapper")
-          .forEach((character) => character.remove());
-
-        const myCharacterIndex = Math.floor(Math.random() * numCharacters);
-        const imagePool = buildImagePool(numCharacters);
-
-        if (!myCharacterAsset) {
-          myCharacterAsset =
-            squareCharacterImages[
-              Math.floor(Math.random() * squareCharacterImages.length)
-            ];
+        // '나' 객체가 아직 없으면 가장 먼저 추가
+        if (!hasCreatedMe) {
+          movingCharacters.push(createCharacter(true));
+          hasCreatedMe = true;
+          currentRenderedCount = 1;
         }
 
-        const placedPositions = [];
-
-        for (let i = 0; i < numCharacters; i++) {
-          const wrapper = document.createElement("div");
-          wrapper.className = "char-wrapper";
-
-          const isMe = i === myCharacterIndex;
-
-          if (isMe) {
-            const meText = document.createElement("div");
-            meText.className = "me-text";
-            meText.innerText = "나";
-            wrapper.appendChild(meText);
+        // 새 캐릭터가 더 필요할 때 동적 생성
+        if (targetCount > currentRenderedCount) {
+          const toAdd = targetCount - currentRenderedCount;
+          for (let i = 0; i < toAdd; i++) {
+            movingCharacters.push(createCharacter(false));
           }
-
-          const imgEl = document.createElement("img");
-          imgEl.className = "char-img";
-
-          const currentSrc = isMe ? myCharacterAsset : imagePool[i];
-          imgEl.src = currentSrc;
-          const isHorizontal = currentSrc && currentSrc.includes("main_01.svg");
-          const isStatic = currentSrc && currentSrc.includes("main_04.svg");
-          const isStretchingY =
-            currentSrc && currentSrc.includes("main_05.svg");
-          const isTrembling = currentSrc && currentSrc.includes("sub_05.svg");
-
-          if (isTrembling) {
-            imgEl.classList.add("tremble");
-          }
-          if (isStretchingY) {
-            imgEl.classList.add("stretch-y");
-          }
-
-          if (isMe) {
-            imgEl.style.filter =
-              "grayscale(100%) contrast(1.2) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))";
-          }
-
-          wrapper.appendChild(imgEl);
-          squareArea.appendChild(wrapper);
-
-          let startX, startY;
-          let orbitAngle = 0,
-            orbitSpeed = 0,
-            orbitRadiusX = 0,
-            orbitRadiusY = 0,
-            centerX = 50,
-            centerY = 85;
-
-          const isOrbiting = currentSrc && currentSrc.includes("sub_02.svg");
-          const isVertical = currentSrc && currentSrc.includes("sub_04.svg");
-
-          if (isOrbiting) {
-            orbitAngle = Math.random() * Math.PI * 2;
-            orbitSpeed = 0.005 + Math.random() * 0.005;
-
-            // 수정 3: 궤도를 도는 캐릭터들이 건물 쪽(상단)으로 가지 않도록 타원으로 변경하고 중심축을 내림
-            const circleRadius = 50 + Math.random() * 20;
-            orbitRadiusX = circleRadius;
-            orbitRadiusY = circleRadius * 0.4;
-
-            centerX = 50;
-            centerY = 82;
-
-            const W = squareArea.clientWidth || 360;
-            const H = squareArea.clientHeight || 500;
-
-            startX =
-              centerX + ((Math.cos(orbitAngle) * orbitRadiusX) / W) * 100;
-            startY =
-              centerY + ((Math.sin(orbitAngle) * orbitRadiusY) / H) * 100;
-          } else {
-            let attempts = 0;
-            const maxAttempts = 100;
-
-            while (attempts < maxAttempts) {
-              startX = Math.random() * 90 + 5;
-              startY = Math.random() * 90 + 5;
-
-              if (isInsideBuildingBounds(startX, startY)) {
-                attempts++;
-                continue;
-              }
-
-              let isValid = true;
-              for (let pos of placedPositions) {
-                const diffX = Math.abs(pos.x - startX);
-                const diffY = Math.abs(pos.y - startY);
-                if (diffX < 7 && diffY < 8) {
-                  isValid = false;
-                  break;
-                }
-              }
-              if (isValid) break;
-              attempts++;
+        }
+        // 캐릭터가 초과될 때 잉여분 삭제 ('나'는 절대 삭제하지 않음)
+        else if (targetCount < currentRenderedCount) {
+          let toRemove = currentRenderedCount - targetCount;
+          for (
+            let i = movingCharacters.length - 1;
+            i >= 0 && toRemove > 0;
+            i--
+          ) {
+            if (!movingCharacters[i].isMe) {
+              movingCharacters[i].element.remove();
+              movingCharacters.splice(i, 1);
+              toRemove--;
             }
           }
-
-          placedPositions.push({ x: startX, y: startY });
-
-          wrapper.style.left = startX + "%";
-          wrapper.style.top = startY + "%";
-
-          const scale = 0.5 + ((startY - 5) / 90) * 0.5;
-          wrapper.style.transform = `translate(-50%, -100%) scale(${scale})`;
-          wrapper.style.zIndex = Math.floor(startY) + (isMe ? 1 : 0);
-
-          const baseSpeed = Math.random() * 0.1 + 0.02;
-          let vx = 0,
-            vy = 0;
-
-          if (isStatic || isTrembling) {
-            vx = 0;
-            vy = 0;
-          } else if (isHorizontal) {
-            vx = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
-            vy = 0;
-            imgEl.style.transform = `scaleX(${vx >= 0 ? 1 : -1})`;
-          } else if (isVertical) {
-            vx = 0;
-            vy = (Math.random() > 0.5 ? 1 : -1) * baseSpeed;
-          } else {
-            const angle = Math.random() * Math.PI * 2;
-            vx = Math.cos(angle) * baseSpeed;
-            vy = Math.sin(angle) * baseSpeed;
-          }
-
-          movingCharacters.push({
-            element: wrapper,
-            image: imgEl,
-            x: startX,
-            y: startY,
-            isOrbiting: isOrbiting,
-            isHorizontal: isHorizontal,
-            isVertical: isVertical,
-            isStatic: isStatic,
-            isTrembling: isTrembling,
-            orbitAngle: orbitAngle,
-            orbitSpeed: orbitSpeed,
-            orbitRadiusX: orbitRadiusX,
-            orbitRadiusY: orbitRadiusY,
-            centerX: centerX,
-            centerY: centerY,
-            baseSpeed: baseSpeed,
-            vx: vx,
-            vy: vy,
-            isMe: isMe,
-          });
         }
+
+        currentRenderedCount = movingCharacters.length;
       }
 
       function animateCharacters() {

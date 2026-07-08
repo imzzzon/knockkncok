@@ -68,7 +68,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        z-index: 10;
+        /* z-index 속성을 제거하여 하위 요소인 건물과 상단 텍스트가 개별적으로 광장 레이어와 비교되도록 수정 */
         flex: 1;
         min-height: 0;
       }
@@ -172,7 +172,7 @@
         display: flex;
         justify-content: center;
         align-items: flex-end;
-        z-index: 10;
+        z-index: 4; /* 건물의 레이어를 광장(5)보다 낮게 설정 */
         margin: 1vh auto 0;
         transform-origin: top center;
       }
@@ -204,7 +204,7 @@
         transform: translateY(11vh) scale(0.65);
         cursor: default;
         pointer-events: none;
-        z-index: 65;
+        z-index: 4; /* 건물이 항상 캐릭터보다 뒤에 있도록 유지 */
       }
 
       .door-asset-img {
@@ -346,11 +346,11 @@
         position: absolute;
         inset: 0;
         top: 0;
-        background-color: #fdfdfd;
+        background-color: transparent; /* 건물이 비치도록 투명하게 설정 */
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 5;
+        z-index: 5; /* 광장 영역이 건물(4)보다 위에 배치되므로 캐릭터가 건물을 가리게 됨 */
         overflow: hidden;
       }
       .app-container.square-mode .square-area {
@@ -848,7 +848,6 @@
       let hasCreatedMe = false;
       let currentRenderedCount = 0;
 
-      // 캐릭터 1개를 동적으로 추가하는 함수
       function createCharacter(isMe) {
         const wrapper = document.createElement("div");
         wrapper.className = "char-wrapper";
@@ -938,7 +937,6 @@
             }
 
             let isValid = true;
-            // 이미 생성된 기존 요소들과 겹치는지 체크
             for (let pos of movingCharacters) {
               const diffX = Math.abs(pos.x - startX);
               const diffY = Math.abs(pos.y - startY);
@@ -1014,22 +1012,18 @@
 
         if (targetCount === currentRenderedCount) return;
 
-        // '나' 객체가 아직 없으면 가장 먼저 추가
         if (!hasCreatedMe) {
           movingCharacters.push(createCharacter(true));
           hasCreatedMe = true;
           currentRenderedCount = 1;
         }
 
-        // 새 캐릭터가 더 필요할 때 동적 생성
         if (targetCount > currentRenderedCount) {
           const toAdd = targetCount - currentRenderedCount;
           for (let i = 0; i < toAdd; i++) {
             movingCharacters.push(createCharacter(false));
           }
-        }
-        // 캐릭터가 초과될 때 잉여분 삭제 ('나'는 절대 삭제하지 않음)
-        else if (targetCount < currentRenderedCount) {
+        } else if (targetCount < currentRenderedCount) {
           let toRemove = currentRenderedCount - targetCount;
           for (
             let i = movingCharacters.length - 1;

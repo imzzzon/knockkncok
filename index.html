@@ -69,13 +69,14 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* z-index 속성을 제거하여 하위 요소인 건물과 상단 텍스트가 개별적으로 광장 레이어와 비교되도록 수정 */
+        justify-content: flex-start;
         flex: 1;
         min-height: 0;
+        padding-bottom: max(8px, 1.5vh);
       }
 
       .header {
-        padding: 3vh 16px;
+        padding: clamp(12px, 2.8vh, 24px) 16px 6px;
         text-align: center;
         position: relative;
         width: 100%;
@@ -159,12 +160,12 @@
       }
 
       .door-wrapper {
-        height: 38vh;
-        width: calc(38vh * 0.75);
-        max-height: 280px;
-        max-width: 210px;
-        min-height: 180px;
-        min-width: 135px;
+        height: clamp(180px, 36vh, 320px);
+        width: min(72vw, 240px);
+        max-height: 320px;
+        max-width: 240px;
+        min-height: 170px;
+        min-width: 160px;
         position: relative;
         cursor: pointer;
         transition:
@@ -174,8 +175,10 @@
         justify-content: center;
         align-items: flex-end;
         z-index: 4; /* 건물의 레이어를 광장(5)보다 낮게 설정 */
-        margin: 1vh auto 0;
+        margin: clamp(6px, 1.2vh, 14px) auto 0;
         transform-origin: top center;
+        overflow: hidden;
+        flex-shrink: 0;
       }
       .door-wrapper:active {
         transform: scale(0.95);
@@ -210,13 +213,16 @@
 
       .door-asset-img {
         position: absolute;
+        left: 50%;
         bottom: 0;
-        left: -25%;
-        width: 150%;
-        height: 150%;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
         object-fit: contain;
         object-position: bottom center;
-        transform-origin: bottom center;
+        transform-origin: center bottom;
+        transform: translateX(-50%) scale(var(--door-scale, 1));
         filter: grayscale(100%) contrast(1.2);
         pointer-events: none;
         user-select: none;
@@ -232,6 +238,40 @@
         transition:
           transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
           opacity 0.6s ease;
+      }
+
+      @media (max-width: 480px) {
+        .header {
+          padding: 12px 12px 4px;
+        }
+
+        .title-text {
+          font-size: 20px;
+        }
+
+        .status-row {
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .status-row p,
+        .open-chat-btn {
+          font-size: 12px;
+        }
+
+        .live-badge {
+          margin-top: 8px;
+          padding: 5px 12px;
+          font-size: 12px;
+        }
+
+        .door-wrapper {
+          height: clamp(160px, 30vh, 230px);
+          width: min(78vw, 210px);
+          min-height: 160px;
+          min-width: 145px;
+          margin-top: 4px;
+        }
       }
 
       .app-container.square-mode .bottom-half {
@@ -736,25 +776,28 @@
       }
 
       function updateDoorImage(knocks) {
+        let scale = 1;
         if (knocks >= 500) {
           doorImg.src = "img/Level.06.svg";
-          doorImg.style.transform = "scale(1.25)";
+          scale = 1.03;
         } else if (knocks >= 300) {
           doorImg.src = "img/Level.05.svg";
-          doorImg.style.transform = "scale(1.15)";
+          scale = 1.02;
         } else if (knocks >= 150) {
           doorImg.src = "img/Level.04.svg";
-          doorImg.style.transform = "scale(1)";
+          scale = 1.01;
         } else if (knocks >= 50) {
           doorImg.src = "img/Level.03.svg";
-          doorImg.style.transform = "scale(1)";
+          scale = 1;
         } else if (knocks >= 20) {
           doorImg.src = "img/Level.02.svg";
-          doorImg.style.transform = "scale(1)";
+          scale = 1;
         } else {
           doorImg.src = "img/Level.1.svg";
-          doorImg.style.transform = "scale(1)";
+          scale = 1;
         }
+
+        doorImg.style.setProperty("--door-scale", scale.toString());
       }
 
       userKnocksEl.innerText = userKnocks.toLocaleString();

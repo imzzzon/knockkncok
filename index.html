@@ -1355,6 +1355,7 @@
       let currentTypingEl = null;
       let sendLocked = false;
       let isComposing = false;
+      let doctorReplyIndex = 0;
 
       function addChatMessage(name, text, isTyping = false) {
         const div = document.createElement("div");
@@ -1394,8 +1395,8 @@
           replyTimer = null;
         }
 
-        const replyText =
-          doctorReplies[Math.floor(Math.random() * doctorReplies.length)];
+        const replyText = doctorReplies[doctorReplyIndex] ?? doctorReplies[0];
+        doctorReplyIndex = (doctorReplyIndex + 1) % doctorReplies.length;
         currentTypingEl = addChatMessage("의사", "입력 중...", true);
 
         replyTimer = setTimeout(() => {

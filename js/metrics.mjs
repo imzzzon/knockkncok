@@ -15,6 +15,25 @@ export function getMetricsPage() {
   return currentPage;
 }
 
+function getTrafficSource() {
+  let referrerOrigin = null;
+
+  if (document.referrer) {
+    try {
+      referrerOrigin = new URL(document.referrer).origin;
+    } catch {
+      // Ignore malformed referrers instead of preventing event logging.
+    }
+  }
+
+  return {
+    source_origin: window.location.origin,
+    source_hostname: window.location.hostname,
+    source_path: window.location.pathname,
+    referrer_origin: referrerOrigin,
+  };
+}
+
 export async function logEvent(eventName, metadata = {}) {
   if (!isSupabaseConfigured) return;
 
@@ -24,7 +43,10 @@ export async function logEvent(eventName, metadata = {}) {
       page: currentPage,
       room_id: ROOM_ID,
       visitor_id: getVisitorId(),
-      metadata,
+      metadata: {
+        ...metadata,
+        ...getTrafficSource(),
+      },
     });
 
     if (error) {

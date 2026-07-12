@@ -227,6 +227,7 @@
         pointer-events: none;
         user-select: none;
         transition: transform 0.3s ease;
+        will-change: transform;
       }
 
       .bottom-half {
@@ -776,28 +777,50 @@
       }
 
       function updateDoorImage(knocks) {
+        let src = "img/Level.1.svg";
         let scale = 1;
         if (knocks >= 500) {
-          doorImg.src = "img/Level.06.svg";
+          src = "img/Level.06.svg";
           scale = 1.03;
         } else if (knocks >= 300) {
-          doorImg.src = "img/Level.05.svg";
+          src = "img/Level.05.svg";
           scale = 1.02;
         } else if (knocks >= 150) {
-          doorImg.src = "img/Level.04.svg";
+          src = "img/Level.04.svg";
           scale = 1.01;
         } else if (knocks >= 50) {
-          doorImg.src = "img/Level.03.svg";
+          src = "img/Level.03.svg";
           scale = 1;
         } else if (knocks >= 20) {
-          doorImg.src = "img/Level.02.svg";
-          scale = 1;
-        } else {
-          doorImg.src = "img/Level.1.svg";
+          src = "img/Level.02.svg";
           scale = 1;
         }
 
-        doorImg.style.setProperty("--door-scale", scale.toString());
+        const isMobile = window.matchMedia("(max-width: 480px)").matches;
+        let visualScale = scale;
+
+        if (isMobile) {
+          const baseFrame = { width: 170, height: 131 };
+          const frameMap = {
+            "img/Level.1.svg": { width: 170, height: 131 },
+            "img/Level.02.svg": { width: 161, height: 131 },
+            "img/Level.03.svg": { width: 157, height: 139 },
+            "img/Level.04.svg": { width: 197, height: 138 },
+            "img/Level.05.svg": { width: 232, height: 148 },
+            "img/Level.06.svg": { width: 232, height: 148 },
+          };
+
+          const frame = frameMap[src];
+          if (frame) {
+            const widthRatio = baseFrame.width / frame.width;
+            const heightRatio = baseFrame.height / frame.height;
+            const fitScale = Math.min(1.02, Math.max(0.96, Math.min(widthRatio, heightRatio)));
+            visualScale = scale * fitScale;
+          }
+        }
+
+        doorImg.src = src;
+        doorImg.style.setProperty("--door-scale", visualScale.toFixed(3));
       }
 
       userKnocksEl.innerText = userKnocks.toLocaleString();

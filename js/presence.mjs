@@ -1,28 +1,10 @@
 import {
-  SUPABASE_PUBLISHABLE_KEY,
-  SUPABASE_URL,
-} from "./supabase-config.mjs";
+  getVisitorId,
+  isSupabaseConfigured,
+  supabase,
+} from "./supabase-client.mjs";
 
 const PRESENCE_CHANNEL = "knockknock-visitors";
-const VISITOR_ID_KEY = "knockknock_visitor_id";
-
-const isConfigured =
-  SUPABASE_URL.startsWith("https://") &&
-  SUPABASE_PUBLISHABLE_KEY !== "YOUR_SUPABASE_PUBLISHABLE_KEY";
-
-function getVisitorId() {
-  const existingId = localStorage.getItem(VISITOR_ID_KEY);
-
-  if (existingId) {
-    return existingId;
-  }
-
-  const newId =
-    crypto.randomUUID?.() ||
-    `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  localStorage.setItem(VISITOR_ID_KEY, newId);
-  return newId;
-}
 
 function countPresenceState(state) {
   return Object.values(state).reduce((total, presences) => {
@@ -32,9 +14,8 @@ function countPresenceState(state) {
 
 export function connectPresence({ page, onCountChange, onStatusChange }) {
   let channel = null;
-  let supabase = null;
 
-  if (!isConfigured) {
+  if (!isSupabaseConfigured) {
     onStatusChange?.("not-configured");
     return {
       disconnect() {},
@@ -42,11 +23,6 @@ export function connectPresence({ page, onCountChange, onStatusChange }) {
   }
 
   const setup = async () => {
-    const { createClient } = await import(
-      "https://esm.sh/@supabase/supabase-js@2"
-    );
-
-    supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const visitorId = getVisitorId();
     channel = supabase.channel(PRESENCE_CHANNEL, {
       config: {
@@ -82,7 +58,7 @@ export function connectPresence({ page, onCountChange, onStatusChange }) {
   });
 
   const disconnect = () => {
-    if (!channel || !supabase) return;
+    if (!channel) return;
     channel.untrack();
     supabase.removeChannel(channel);
   };

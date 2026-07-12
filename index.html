@@ -645,6 +645,11 @@
 
     <script type="module">
       import { connectPresence } from "./js/presence.mjs";
+      import {
+        getMetricsPage,
+        logEvent,
+        setMetricsPage,
+      } from "./js/metrics.mjs";
 
       const knockSoundWords = ["쾅!", "쿵쿵!", "철컥!", "쾅쾅쾅!", "쿵!"];
 
@@ -719,7 +724,16 @@
       const USER_KNOCKS_STORAGE_KEY = "userKnocks";
       let userKnocks = 0;
       let unsavedKnocks = 0;
+      let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
+
+      function flushKnockMetrics() {
+        if (unloggedKnocks <= 0) return;
+
+        const count = unloggedKnocks;
+        unloggedKnocks = 0;
+        void logEvent("knock", { count, totalKnocks: userKnocks });
+      }
 
       function updateDoorImage(knocks) {
         if (knocks >= 500) {
@@ -751,7 +765,12 @@
 
         userKnocks += 1;
         unsavedKnocks += 1;
+        unloggedKnocks += 1;
         userKnocksEl.innerText = userKnocks.toLocaleString();
+
+        if (unloggedKnocks >= 5) {
+          flushKnockMetrics();
+        }
 
         updateDoorImage(userKnocks);
 
@@ -790,6 +809,8 @@
 
       function switchToHospitalPresence() {
         if (presenceConn) presenceConn.disconnect();
+        setMetricsPage("hospital");
+        void logEvent("door_enter");
         presenceConn = connectPresence({
           page: "hospital",
           onCountChange(count) {
@@ -807,6 +828,8 @@
 
       function switchToSquarePresence() {
         if (presenceConn) presenceConn.disconnect();
+        setMetricsPage("square");
+        void logEvent("square_enter");
         presenceConn = connectPresence({
           page: "square",
           onCountChange(count) {
@@ -823,7 +846,35 @@
         });
       }
 
+      const sessionStartedAt = Date.now();
+      let sessionEnded = false;
+
+      setMetricsPage("hospital");
+      void logEvent("session_start");
+      void logEvent("home_view");
       switchToHospitalPresence();
+
+      const heartbeatTimer = setInterval(() => {
+        void logEvent("heartbeat", { page: getMetricsPage() });
+      }, 30_000);
+
+      function finishMetricsSession() {
+        if (sessionEnded) return;
+        sessionEnded = true;
+        clearInterval(heartbeatTimer);
+        savePendingKnocks();
+        flushKnockMetrics();
+        const durationSec = Math.max(
+          0,
+          Math.round((Date.now() - sessionStartedAt) / 1000),
+        );
+        void logEvent("session_end", { durationSec });
+      }
+
+      window.addEventListener("pagehide", finishMetricsSession, { once: true });
+      window.addEventListener("beforeunload", finishMetricsSession, {
+        once: true,
+      });
 
       function isInsideBuildingBounds(x, y) {
         return x > 10 && x < 90 && y < 65;
@@ -1301,6 +1352,7 @@
           return;
         }
         addChatMessage("나(환자)", text.replace(/</g, "&lt;"));
+        void logEvent("chat_send", { length: text.length });
         chatInput.value = "";
         chatInput.blur();
         scheduleDoctorReply();

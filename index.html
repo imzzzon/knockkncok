@@ -781,13 +781,13 @@
         // 💡 수정됨: 커진 프레임 안에서 01~03 레벨은 꽉 차지 않게 기본 크기를 줄임
         let scale = 0.72;
 
-        if (knocks >= 130) {
+        if (knocks >= 500) {
           src = "img/Level.06.svg";
           scale = 1.05; // 06레벨은 프레임을 꽉 채우도록 설정
-        } else if (knocks >= 120) {
+        } else if (knocks >= 300) {
           src = "img/Level.05.svg";
           scale = 1.02;
-        } else if (knocks >= 100) {
+        } else if (knocks >= 150) {
           src = "img/Level.04.svg";
           scale = 0.86;
         } else if (knocks >= 50) {

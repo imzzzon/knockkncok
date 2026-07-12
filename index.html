@@ -805,7 +805,7 @@
             "img/Level.1.svg": { width: 170, height: 131 },
             "img/Level.02.svg": { width: 161, height: 131 },
             "img/Level.03.svg": { width: 157, height: 139 },
-            "img/Level.04.svg": { width: 197, height: 138 },
+            "img/Level.04.svg": { width: 237, height: 178 },
             "img/Level.05.svg": { width: 232, height: 148 },
             "img/Level.06.svg": { width: 232, height: 148 },
           };
@@ -814,7 +814,10 @@
           if (frame) {
             const widthRatio = baseFrame.width / frame.width;
             const heightRatio = baseFrame.height / frame.height;
-            const fitScale = Math.min(1.02, Math.max(0.96, Math.min(widthRatio, heightRatio)));
+            const fitScale = Math.min(
+              1.02,
+              Math.max(0.96, Math.min(widthRatio, heightRatio)),
+            );
             visualScale = scale * fitScale;
           }
         }

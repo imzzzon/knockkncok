@@ -779,15 +779,17 @@
       function updateDoorImage(knocks) {
         let src = "img/Level.1.svg";
         let scale = 1;
+
+        // 💡 수정됨: Level 04부터는 캔버스가 넓어지므로 스케일을 대폭 확대해 크기를 보정합니다.
         if (knocks >= 500) {
           src = "img/Level.06.svg";
-          scale = 1.03;
+          scale = 1.45; // 기존 1.03 -> 1.45
         } else if (knocks >= 300) {
           src = "img/Level.05.svg";
-          scale = 1.02;
+          scale = 1.42; // 기존 1.02 -> 1.42
         } else if (knocks >= 150) {
           src = "img/Level.04.svg";
-          scale = 1.01;
+          scale = 1.35; // 기존 1.01 -> 1.35
         } else if (knocks >= 50) {
           src = "img/Level.03.svg";
           scale = 1;

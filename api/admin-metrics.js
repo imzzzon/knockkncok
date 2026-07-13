@@ -8,6 +8,15 @@ const RANGE_DURATIONS = {
 };
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
+class SupabaseRequestError extends Error {
+  constructor({ status, code, message }) {
+    super(message);
+    this.name = "SupabaseRequestError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 const kstPartsFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,
   year: "numeric",
@@ -48,6 +57,64 @@ function addToNumberMap(map, key, value) {
 function round(value, digits = 2) {
   const factor = 10 ** digits;
   return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function normalizeEnvValue(value) {
+  let normalized = typeof value === "string" ? value.trim() : "";
+  const first = normalized[0];
+  const last = normalized[normalized.length - 1];
+  if (normalized.length >= 2 && ((first === '"' && last === '"') || (first === "'" && last === "'"))) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+  return normalized;
+}
+
+function normalizeSupabaseUrl(value) {
+  return normalizeEnvValue(value).replace(/\/+$/, "");
+}
+
+function isLegacyJwtKey(key) {
+  return key.split(".").length === 3;
+}
+
+function createSupabaseHeaders(serviceRoleKey, offset) {
+  const headers = {
+    apikey: serviceRoleKey,
+    Accept: "application/json",
+    Range: `${offset}-${offset + PAGE_SIZE - 1}`,
+    "Cache-Control": "no-cache",
+  };
+
+  // New sb_secret_ keys are opaque API keys, not JWTs. Legacy service_role
+  // keys remain JWTs and still need the Authorization header for REST.
+  if (isLegacyJwtKey(serviceRoleKey)) {
+    headers.Authorization = `Bearer ${serviceRoleKey}`;
+  }
+
+  return headers;
+}
+
+async function createSupabaseRequestError(response) {
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Keep the public response generic even when Supabase returns a non-JSON body.
+  }
+
+  return new SupabaseRequestError({
+    status: response.status,
+    code: typeof body?.code === "string" ? body.code : "SUPABASE_HTTP_ERROR",
+    message: typeof body?.message === "string" ? body.message : response.statusText || "Supabase request failed",
+  });
+}
+
+function redactLogValue(value, secrets) {
+  let redacted = typeof value === "string" ? value : String(value ?? "unknown-error");
+  for (const secret of secrets) {
+    if (secret) redacted = redacted.split(secret).join("[REDACTED]");
+  }
+  return redacted;
 }
 
 function fillDailySeries(map, firstDate, lastDate) {
@@ -156,22 +223,16 @@ async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt }) {
   let offset = 0;
 
   while (true) {
-    const url = new URL("/rest/v1/event_logs", supabaseUrl);
+    const url = new URL(`${supabaseUrl}/rest/v1/event_logs`);
     url.searchParams.set("select", "created_at,event_name,visitor_id,metadata");
     url.searchParams.set("order", "created_at.asc");
     if (startAt) url.searchParams.set("created_at", `gte.${startAt.toISOString()}`);
 
     const response = await fetch(url, {
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        Accept: "application/json",
-        Range: `${offset}-${offset + PAGE_SIZE - 1}`,
-        "Cache-Control": "no-cache",
-      },
+      headers: createSupabaseHeaders(serviceRoleKey, offset),
     });
 
-    if (!response.ok) throw new Error(`supabase-request-failed:${response.status}`);
+    if (!response.ok) throw await createSupabaseRequestError(response);
     const page = await response.json();
     if (!Array.isArray(page)) throw new Error("supabase-response-invalid");
     rows.push(...page);
@@ -195,8 +256,8 @@ async function handler(request, response) {
   const range = rawRange || "week";
   if (!VALID_RANGES.has(range)) return response.status(400).json({ error: "올바르지 않은 조회 기간입니다" });
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL);
+  const serviceRoleKey = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!supabaseUrl || !serviceRoleKey) return response.status(500).json({ error: "관리자 지표를 불러올 수 없습니다" });
 
   try {
@@ -206,7 +267,12 @@ async function handler(request, response) {
     const aggregated = aggregateEvents(rows, { range, startAt, now });
     return response.status(200).json({ range, generatedAt: now.toISOString(), ...aggregated });
   } catch (error) {
-    console.error("admin-metrics aggregation failed", error instanceof Error ? error.message : "unknown-error");
+    const secrets = [serviceRoleKey, supabaseUrl];
+    console.error("admin-metrics Supabase request failed", {
+      status: error instanceof SupabaseRequestError ? error.status : null,
+      code: error instanceof SupabaseRequestError ? error.code : "ADMIN_METRICS_INTERNAL",
+      message: redactLogValue(error instanceof Error ? error.message : error, secrets),
+    });
     return response.status(500).json({ error: "관리자 지표를 불러올 수 없습니다" });
   }
 }

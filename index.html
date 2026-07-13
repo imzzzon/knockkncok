@@ -781,7 +781,10 @@
         // 💡 수정됨: 커진 프레임 안에서 01~03 레벨은 꽉 차지 않게 기본 크기를 줄임
         let scale = 0.72;
 
-        if (knocks >= 500) {
+        if (knocks >= 1000) {
+          src = "img/Level.07.svg";
+          scale = 1.08; // 07레벨은 가장 높은 단계로 표시
+        } else if (knocks >= 500) {
           src = "img/Level.06.svg";
           scale = 1.05; // 06레벨은 프레임을 꽉 채우도록 설정
         } else if (knocks >= 300) {
@@ -810,6 +813,7 @@
             "img/Level.04.svg": { width: 237, height: 178 },
             "img/Level.05.svg": { width: 232, height: 148 },
             "img/Level.06.svg": { width: 232, height: 148 },
+            "img/Level.07.svg": { width: 232, height: 148 },
           };
 
           const frame = frameMap[src];

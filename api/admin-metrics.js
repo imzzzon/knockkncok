@@ -94,14 +94,7 @@ function createSupabaseHeaders(serviceRoleKey, offset) {
   return headers;
 }
 
-async function createSupabaseRequestError(response) {
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    // Keep the public response generic even when Supabase returns a non-JSON body.
-  }
-
+function createSupabaseRequestError(response, body) {
   return new SupabaseRequestError({
     status: response.status,
     code: typeof body?.code === "string" ? body.code : "SUPABASE_HTTP_ERROR",
@@ -115,6 +108,17 @@ function redactLogValue(value, secrets) {
     if (secret) redacted = redacted.split(secret).join("[REDACTED]");
   }
   return redacted;
+}
+
+// TEMP DEBUG: Remove these helpers and diagnostic response fields after the
+// production failure is identified.
+function safeDebugMessage(value, secrets) {
+  return redactLogValue(value, secrets).replace(/[\r\n]+/g, " ").slice(0, 240);
+}
+
+function firstStackLines(error, secrets) {
+  const stack = error instanceof Error && typeof error.stack === "string" ? error.stack : "";
+  return redactLogValue(stack, secrets).split("\n").slice(0, 3).join("\n");
 }
 
 function fillDailySeries(map, firstDate, lastDate) {
@@ -221,32 +225,72 @@ function aggregateEvents(rows, { range, startAt, now }) {
   };
 }
 
-async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt }) {
+async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug }) {
   const rows = [];
   let offset = 0;
+  let pageIndex = 0;
 
   while (true) {
+    const rangeStart = offset;
+    const rangeEnd = offset + PAGE_SIZE - 1;
     const url = new URL(`${supabaseUrl}/rest/v1/event_logs`);
     url.searchParams.set("select", "created_at,event_name,visitor_id,metadata");
     url.searchParams.set("order", "created_at.asc");
     if (startAt) url.searchParams.set("created_at", `gte.${startAt.toISOString()}`);
 
+    // TEMP DEBUG: Stage logs intentionally exclude URLs, keys, and row data.
+    debug.stage = "before-fetch";
+    console.log("[admin-metrics] stage=before-fetch");
     const response = await fetch(url, {
       headers: createSupabaseHeaders(serviceRoleKey, offset),
     });
+    debug.stage = "after-fetch";
+    debug.status = response.status;
+    debug.message = response.statusText || "Supabase response received";
+    console.log("[admin-metrics] stage=after-fetch", {
+      status: response.status,
+      statusText: response.statusText,
+    });
+    console.log("[admin-metrics] stage=page", {
+      pageIndex,
+      rangeStart,
+      rangeEnd,
+      status: response.status,
+    });
 
-    if (!response.ok) throw await createSupabaseRequestError(response);
-    const page = await response.json();
+    debug.stage = "before-body-parse";
+    console.log("[admin-metrics] stage=before-body-parse", { pageIndex });
+    let page;
+    try {
+      page = await response.json();
+    } catch (error) {
+      debug.stage = "body-parse-error";
+      debug.message = "Supabase response body parsing failed";
+      console.log("[admin-metrics] stage=after-body-parse", { pageIndex, parsed: false });
+      throw error;
+    }
+    debug.stage = "after-body-parse";
+    console.log("[admin-metrics] stage=after-body-parse", { pageIndex, parsed: true });
+
+    if (!response.ok) {
+      debug.stage = "supabase-error";
+      const requestError = createSupabaseRequestError(response, page);
+      debug.message = requestError.message;
+      throw requestError;
+    }
     if (!Array.isArray(page)) throw new Error("supabase-response-invalid");
     rows.push(...page);
     if (page.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
+    pageIndex += 1;
   }
 
   return rows;
 }
 
 async function handler(request, response) {
+  // TEMP DEBUG: Remove all [admin-metrics] stage logs after diagnosis.
+  console.log("[admin-metrics] stage=start");
   response.setHeader("Cache-Control", "no-store, max-age=0");
   response.setHeader("Content-Type", "application/json; charset=utf-8");
 
@@ -259,24 +303,48 @@ async function handler(request, response) {
   const range = rawRange || "week";
   if (!VALID_RANGES.has(range)) return response.status(400).json({ error: "올바르지 않은 조회 기간입니다" });
 
-  const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL);
-  const serviceRoleKey = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!supabaseUrl || !serviceRoleKey) return response.status(500).json({ error: "관리자 지표를 불러올 수 없습니다" });
-
+  const debug = { stage: "start", status: null, message: "Request failed" };
+  let supabaseUrl = "";
+  let serviceRoleKey = "";
   try {
+    supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL);
+    serviceRoleKey = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    debug.stage = "env";
+    console.log("[admin-metrics] stage=env", {
+      hasUrl: Boolean(process.env.SUPABASE_URL),
+      hasKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      keyType: serviceRoleKey.startsWith("sb_secret_") ? "secret" : "legacy",
+    });
+    if (!supabaseUrl || !serviceRoleKey) {
+      debug.status = "ENV_MISSING";
+      debug.message = "Required environment variables are missing";
+      throw new Error(debug.message);
+    }
+
     const now = new Date();
     const startAt = range === "all" ? null : new Date(now.getTime() - RANGE_DURATIONS[range]);
-    const rows = await fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt });
+    const rows = await fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug });
+    debug.stage = "aggregation";
     const aggregated = aggregateEvents(rows, { range, startAt, now });
+    debug.stage = "complete";
     return response.status(200).json({ range, generatedAt: now.toISOString(), ...aggregated });
   } catch (error) {
     const secrets = [serviceRoleKey, supabaseUrl];
-    console.error("admin-metrics Supabase request failed", {
-      status: error instanceof SupabaseRequestError ? error.status : null,
-      code: error instanceof SupabaseRequestError ? error.code : "ADMIN_METRICS_INTERNAL",
-      message: redactLogValue(error instanceof Error ? error.message : error, secrets),
+    const message = safeDebugMessage(error instanceof Error ? error.message : error, secrets);
+    if (debug.status === null) debug.status = "INTERNAL_ERROR";
+    debug.message = message || "Request failed";
+    // TEMP DEBUG: Limited to safe error fields and the first three stack lines.
+    console.error("[admin-metrics] stage=error", {
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: debug.message,
+      stack: firstStackLines(error, secrets),
     });
-    return response.status(500).json({ error: "관리자 지표를 불러올 수 없습니다" });
+    // TEMP DEBUG: Revert to the generic error response after diagnosis.
+    return response.status(500).json({
+      stage: debug.stage,
+      debugStatus: debug.status,
+      debugMessage: debug.message,
+    });
   }
 }
 

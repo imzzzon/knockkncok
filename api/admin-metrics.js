@@ -136,10 +136,11 @@ function aggregateEvents(rows, { range, startAt, now }) {
   const dailyVisitors = new Map();
   const hourlyVisitors = new Map(Array.from({ length: 24 }, (_, hour) => [hour, new Set()]));
   const weekdayVisitors = new Map(WEEKDAY_LABELS.map((label) => [label, new Set()]));
+  const knockParticipants = new Set();
+  const chatParticipants = new Set();
   const dailyKnocks = new Map();
   const dailyChats = new Map();
   let homeViews = 0;
-  let doorEnters = 0;
   let squareEnters = 0;
   let totalKnocks = 0;
   let chatSends = 0;
@@ -164,16 +165,17 @@ function aggregateEvents(rows, { range, startAt, now }) {
     }
 
     if (row.event_name === "home_view") homeViews += 1;
-    if (row.event_name === "door_enter") doorEnters += 1;
     if (row.event_name === "square_enter") squareEnters += 1;
 
     if (row.event_name === "knock") {
+      if (visitorId) knockParticipants.add(visitorId);
       const count = toFiniteNumber(row.metadata?.count) ?? 0;
       totalKnocks += count;
       addToNumberMap(dailyKnocks, date, count);
     }
 
     if (row.event_name === "chat_send") {
+      if (visitorId) chatParticipants.add(visitorId);
       chatSends += 1;
       addToNumberMap(dailyChats, date, 1);
     }
@@ -199,8 +201,9 @@ function aggregateEvents(rows, { range, startAt, now }) {
       returningVisitors,
       returnRate: visitorCount ? round(returningVisitors / visitorCount, 4) : 0,
       homeViews,
-      doorEnters,
+      knockParticipants: knockParticipants.size,
       squareEnters,
+      chatParticipants: chatParticipants.size,
       totalKnocks: round(totalKnocks),
       avgKnocksPerVisitor: visitorCount ? round(totalKnocks / visitorCount) : 0,
       chatSends,

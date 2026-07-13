@@ -155,8 +155,9 @@ function renderMetrics(data) {
   setText("avg-duration", formatDuration(summary.avgDurationSec));
   setText("duration-samples", `유효 세션 ${formatNumber(summary.durationSampleCount)}개`);
   setText("home-views", formatNumber(summary.homeViews));
-  setText("door-enters", formatNumber(summary.doorEnters));
+  setText("knock-participants", formatNumber(summary.knockParticipants));
   setText("square-enters", formatNumber(summary.squareEnters));
+  setText("chat-participants", formatNumber(summary.chatParticipants));
 
   const generatedAt = new Date(data.generatedAt);
   elements.updatedAt.textContent = `마지막 갱신: ${Number.isNaN(generatedAt.getTime()) ? "—" : dateTimeFormatter.format(generatedAt)} KST`;

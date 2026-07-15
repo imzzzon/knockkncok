@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>문두드리기 대시보드</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css"
+    />
+    <link rel="stylesheet" href="/css/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main class="dashboard-shell">
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">INTERNAL ANALYTICS</p>
+          <h1>문두드리기 대시보드</h1>
+          <p class="updated-at" id="updated-at">마지막 갱신: —</p>
+        </div>
+        <div class="header-actions">
+          <div class="range-filter" role="group" aria-label="조회 기간">
+            <button type="button" data-range="day">일별</button>
+            <button type="button" data-range="week" class="active">주별</button>
+            <button type="button" data-range="month">월별</button>
+            <button type="button" data-range="all">전체</button>
+          </div>
+          <button type="button" class="refresh-button" id="refresh-button">
+            <span aria-hidden="true">↻</span>
+            새로고침
+          </button>
+        </div>
+      </header>
+
+      <section class="status-panel" id="status-panel" aria-live="polite">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p id="status-message">지표를 불러오는 중입니다</p>
+        <button type="button" id="retry-button" hidden>다시 시도</button>
+      </section>
+
+      <div id="dashboard-content" aria-busy="true">
+        <section class="kpi-grid" aria-label="핵심 지표">
+          <article class="metric-card live-card">
+            <div class="metric-title"><span class="live-dot"></span>현재 전체 연결</div>
+            <strong id="live-total">—</strong>
+            <p>현재 연결 수 · 관리자 제외</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">총 방문자</div>
+            <strong id="visitors">0</strong>
+            <p>기간 내 고유 visitor_id</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">재방문자</div>
+            <strong id="returning-visitors">0</strong>
+            <p id="return-rate">재방문율 0%</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">총 노크</div>
+            <strong id="total-knocks">0</strong>
+            <p>metadata.count 합계</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">1인 평균 노크</div>
+            <strong id="avg-knocks">0</strong>
+            <p>방문자 기준</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">채팅 전송 수</div>
+            <strong id="chat-sends">0</strong>
+            <p>chat_send 이벤트</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">1인 평균 채팅</div>
+            <strong id="avg-chats">0</strong>
+            <p>방문자 기준</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">
+              평균 체류시간 <span class="estimate-badge">추정값</span>
+            </div>
+            <strong id="avg-duration">데이터 부족</strong>
+            <p id="duration-samples">유효 세션 0개</p>
+          </article>
+        </section>
+
+        <section class="dashboard-grid primary-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>일별 방문자 수</h2>
+                <p>KST 날짜별 고유 방문자</p>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="daily-visitors-chart"></canvas>
+              <p class="empty-chart" id="daily-visitors-empty" hidden>
+                해당 기간에 데이터가 없습니다
+              </p>
+            </div>
+          </article>
+
+          <article class="panel presence-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>현재 화면별 연결</h2>
+                <p>Presence 실시간 상태</p>
+              </div>
+              <span class="connection-status" id="presence-status">연결 중</span>
+            </div>
+            <div class="presence-list">
+              <div class="presence-row">
+                <span class="presence-icon hospital-icon" aria-hidden="true">＋</span>
+                <div><b>병원 화면</b><small>page: hospital</small></div>
+                <strong id="live-hospital">—</strong>
+              </div>
+              <div class="presence-row">
+                <span class="presence-icon square-icon" aria-hidden="true">◇</span>
+                <div><b>광장 화면</b><small>page: square</small></div>
+                <strong id="live-square">—</strong>
+              </div>
+            </div>
+            <p class="panel-note">
+              visitor 수가 아닌 연결 수입니다. 같은 사용자가 여러 탭을 열면 각
+              연결이 따로 집계될 수 있습니다.
+            </p>
+          </article>
+        </section>
+
+        <section class="dashboard-grid two-column-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><h2>일별 노크 수</h2><p>metadata.count 합계</p></div></div>
+            <div class="chart-wrap">
+              <canvas id="daily-knocks-chart"></canvas>
+              <p class="empty-chart" id="daily-knocks-empty" hidden>해당 기간에 데이터가 없습니다</p>
+            </div>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><h2>일별 채팅 수</h2><p>chat_send 이벤트 수</p></div></div>
+            <div class="chart-wrap">
+              <canvas id="daily-chats-chart"></canvas>
+              <p class="empty-chart" id="daily-chats-empty" hidden>해당 기간에 데이터가 없습니다</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="dashboard-grid two-column-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><h2>시간대별 방문자</h2><p>KST 0시–23시 · 시간대별 고유 방문자</p></div></div>
+            <div class="chart-wrap">
+              <canvas id="hourly-visitors-chart"></canvas>
+              <p class="empty-chart" id="hourly-visitors-empty" hidden>해당 기간에 데이터가 없습니다</p>
+            </div>
+          </article>
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><h2>요일별 방문자</h2><p>KST 월요일–일요일 · 요일별 고유 방문자</p></div></div>
+            <div class="chart-wrap">
+              <canvas id="weekday-visitors-chart"></canvas>
+              <p class="empty-chart" id="weekday-visitors-empty" hidden>해당 기간에 데이터가 없습니다</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel funnel-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>주요 행동 전환</h2>
+              <p>서비스 진입 이후 핵심 행동 참여 현황입니다</p>
+            </div>
+          </div>
+          <div class="funnel-flow">
+            <div class="funnel-step"><span>01</span><p>서비스 진입</p><strong id="home-views">0</strong><small>home_view 이벤트 수</small></div>
+            <span class="funnel-arrow" aria-hidden="true">→</span>
+            <div class="funnel-step"><span>02</span><p>노크 참여자</p><strong id="knock-participants">0</strong><small>고유 방문자 수</small></div>
+            <span class="funnel-arrow" aria-hidden="true">→</span>
+            <div class="funnel-step"><span>03</span><p>광장 진입</p><strong id="square-enters">0</strong><small>square_enter 이벤트 수</small></div>
+            <span class="funnel-arrow" aria-hidden="true">→</span>
+            <div class="funnel-step"><span>04</span><p>채팅 참여자</p><strong id="chat-participants">0</strong><small>고유 방문자 수</small></div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/js/admin.mjs"></script>
+  </body>
+</html>

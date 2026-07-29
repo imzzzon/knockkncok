@@ -15,9 +15,9 @@
       property="og:description"
       content="오늘 할 일: 살아 있기. 온라인 폐쇄병동에서 함께해요."
     />
-    <!-- ⚠️ 주의: 카카오톡 등에서는 svg가 안 보일 수 있으니 png로 변환 후 아래 경로를 img/Level.1.png 로 변경하는 것을 추천합니다. -->
-    <!-- ⚠️ 주의: 배포 후에는 'https://내웹사이트주소.com/img/Level.1.svg' 처럼 절대 경로를 적어주는 것이 가장 확실합니다. -->
-    <meta property="og:image" content="img/Level.1.svg" />
+    <!-- ⚠️ 주의: 건물 단계 이미지를 13단계의 SVG 자산으로 사용합니다. -->
+    <!-- ⚠️ 주의: 배포 후에는 'https://내웹사이트주소.com/img/Level_01.svg' 처럼 절대 경로를 적어주는 것이 가장 확실합니다. -->
+    <meta property="og:image" content="img/Level_01.svg" />
 
     <!-- 👇 트위터(X) 공유 썸네일 설정을 위한 Twitter Card 태그 추가 👇 -->
     <meta name="twitter:card" content="summary" />
@@ -26,7 +26,7 @@
       name="twitter:description"
       content="오늘 할 일: 살아 있기. 온라인 폐쇄병동에서 함께해요."
     />
-    <meta name="twitter:image" content="img/Level.1.svg" />
+    <meta name="twitter:image" content="img/Level_01.svg" />
     <!-- 👆 여기까지 👆 -->
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -686,7 +686,7 @@
           <div class="door-instruction">병원 문을 두드려 보세요!</div>
           <div class="door-wrapper" id="door-wrapper">
             <img
-              src="img/Level.1.svg"
+              src="img/Level_01.svg"
               class="door-asset-img"
               id="door-img"
               alt="정신병원 문 에셋"
@@ -830,29 +830,33 @@
       }
 
       function updateDoorImage(knocks) {
-        let src = "img/Level.1.svg";
-        // 💡 수정됨: 커진 프레임 안에서 01~03 레벨은 꽉 차지 않게 기본 크기를 줄임
-        let scale = 0.72;
+        const doorLevels = [
+          "img/Level_01.svg",
+          "img/Level_02.svg",
+          "img/Level_03.svg",
+          "img/Level_04.svg",
+          "img/Level_05.svg",
+          "img/Level_06.svg",
+          "img/Level_07.svg",
+          "img/Level_08.svg",
+          "img/Level_09.svg",
+          "img/Level_10.svg",
+          "img/Level_11.svg",
+          "img/Level_12.svg",
+          "img/Level_13.svg",
+        ];
+        const doorScales = [
+          0.72, 0.72, 0.74, 0.76, 0.78, 0.82, 0.86, 0.9, 0.94, 0.98, 1.02, 1.05,
+          1.08,
+        ];
+        // 100클릭마다 다음 단계로 이동: 0~99 = Level_01, 100~199 = Level_02, ..., 1200+ = Level_13
+        const levelIndex = Math.min(
+          doorLevels.length - 1,
+          Math.floor(knocks / 100),
+        );
 
-        if (knocks >= 1000) {
-          src = "img/Level.07.svg";
-          scale = 1.08; // 07레벨은 가장 높은 단계로 표시
-        } else if (knocks >= 500) {
-          src = "img/Level.06.svg";
-          scale = 1.05; // 06레벨은 프레임을 꽉 채우도록 설정
-        } else if (knocks >= 300) {
-          src = "img/Level.05.svg";
-          scale = 1.02;
-        } else if (knocks >= 150) {
-          src = "img/Level.04.svg";
-          scale = 0.86;
-        } else if (knocks >= 50) {
-          src = "img/Level.03.svg";
-          scale = 0.82;
-        } else if (knocks >= 20) {
-          src = "img/Level.02.svg";
-          scale = 0.72;
-        }
+        let src = doorLevels[levelIndex];
+        let scale = doorScales[levelIndex];
 
         const isMobile = window.matchMedia("(max-width: 480px)").matches;
         let visualScale = scale;
@@ -860,13 +864,19 @@
         if (isMobile) {
           const baseFrame = { width: 170, height: 131 };
           const frameMap = {
-            "img/Level.1.svg": { width: 170, height: 131 },
-            "img/Level.02.svg": { width: 161, height: 131 },
-            "img/Level.03.svg": { width: 157, height: 139 },
-            "img/Level.04.svg": { width: 237, height: 178 },
-            "img/Level.05.svg": { width: 232, height: 148 },
-            "img/Level.06.svg": { width: 232, height: 148 },
-            "img/Level.07.svg": { width: 232, height: 148 },
+            "img/Level_01.svg": { width: 170, height: 131 },
+            "img/Level_02.svg": { width: 161, height: 131 },
+            "img/Level_03.svg": { width: 157, height: 139 },
+            "img/Level_04.svg": { width: 237, height: 178 },
+            "img/Level_05.svg": { width: 232, height: 148 },
+            "img/Level_06.svg": { width: 232, height: 148 },
+            "img/Level_07.svg": { width: 232, height: 148 },
+            "img/Level_08.svg": { width: 232, height: 148 },
+            "img/Level_09.svg": { width: 232, height: 148 },
+            "img/Level_10.svg": { width: 232, height: 148 },
+            "img/Level_11.svg": { width: 232, height: 148 },
+            "img/Level_12.svg": { width: 232, height: 148 },
+            "img/Level_13.svg": { width: 232, height: 148 },
           };
 
           const frame = frameMap[src];

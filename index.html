@@ -946,10 +946,10 @@
 
       function getNpcCount() {
         const stored = Number(sessionStorage.getItem(NPC_COUNT_STORAGE_KEY));
-        if (Number.isInteger(stored) && stored >= 5 && stored <= 10) {
+        if (Number.isInteger(stored) && stored >= 3 && stored <= 5) {
           return stored;
         }
-        const count = Math.floor(Math.random() * 6) + 5;
+        const count = Math.floor(Math.random() * 3) + 3;
         sessionStorage.setItem(NPC_COUNT_STORAGE_KEY, String(count));
         return count;
       }

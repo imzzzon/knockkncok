@@ -199,12 +199,12 @@
         margin: clamp(8px, 2vh, 14px) auto 0;
       }
       .door-wrapper {
-        height: clamp(220px, 40vh, 360px); /* 프레임 높이 확대 */
-        width: min(85vw, 280px); /* 프레임 너비 확대 */
-        max-height: 360px;
-        max-width: 280px;
-        min-height: 200px;
-        min-width: 180px;
+        height: clamp(260px, 45vh, 420px); /* 프레임 높이 확대 */
+        width: min(95vw, 330px); /* 프레임 너비 확대 */
+        max-height: 420px;
+        max-width: 330px;
+        min-height: 220px;
+        min-width: 200px;
         position: relative;
         cursor: pointer;
         transition:
@@ -846,8 +846,8 @@
           "img/Level_13.svg",
         ];
         const doorScales = [
-          0.72, 0.72, 0.74, 0.76, 0.78, 0.82, 0.86, 0.9, 0.94, 0.98, 1.02, 1.05,
-          1.08,
+          0.79, 0.79, 0.81, 0.84, 0.86, 0.9, 0.95, 0.99, 1.03, 1.08, 1.12, 1.16,
+          1.19,
         ];
         // 100클릭마다 다음 단계로 이동: 0~99 = Level_01, 100~199 = Level_02, ..., 1200+ = Level_13
         const levelIndex = Math.min(

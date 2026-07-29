@@ -50,6 +50,8 @@ button { font: inherit; }
 
 h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.045em; }
 .updated-at { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
+.period-label { margin: 10px 0 0; color: var(--text); font-size: 16px; font-weight: 800; }
+.period-label + .updated-at { margin-top: 5px; }
 
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .range-filter { display: flex; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }

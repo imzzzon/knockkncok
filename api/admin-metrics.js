@@ -1,12 +1,8 @@
 const TIME_ZONE = "Asia/Seoul";
 const PAGE_SIZE = 1000;
 const VALID_RANGES = new Set(["day", "week", "month", "all"]);
-const RANGE_DURATIONS = {
-  day: 24 * 60 * 60 * 1000,
-  week: 7 * 24 * 60 * 60 * 1000,
-  month: 30 * 24 * 60 * 60 * 1000,
-};
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 class SupabaseRequestError extends Error {
   constructor({ status, code, message }) {
@@ -35,6 +31,33 @@ function getKstParts(value) {
     date: `${parts.year}-${parts.month}-${parts.day}`,
     hour: Number(parts.hour),
     weekday: parts.weekday,
+  };
+}
+
+function getCalendarRange(range, now) {
+  if (range === "all") {
+    return { startAt: null, startDate: null, endDate: getKstParts(now).date };
+  }
+
+  // Shift KST wall-clock time into UTC fields so calendar arithmetic is
+  // independent of the server's own timezone.
+  const kstClock = new Date(now.getTime() + KST_OFFSET_MS);
+  const year = kstClock.getUTCFullYear();
+  const monthIndex = kstClock.getUTCMonth();
+  let day = kstClock.getUTCDate();
+
+  if (range === "week") {
+    const weekday = kstClock.getUTCDay();
+    day -= weekday === 0 ? 6 : weekday - 1;
+  } else if (range === "month") {
+    day = 1;
+  }
+
+  const startAt = new Date(Date.UTC(year, monthIndex, day) - KST_OFFSET_MS);
+  return {
+    startAt,
+    startDate: getKstParts(startAt).date,
+    endDate: getKstParts(now).date,
   };
 }
 
@@ -150,6 +173,10 @@ function aggregateEvents(rows, { range, startAt, now }) {
   let chatSends = 0;
   let durationTotal = 0;
   let durationSampleCount = 0;
+  let hospitalDurationTotal = 0;
+  let hospitalDurationSampleCount = 0;
+  let squareDurationTotal = 0;
+  let squareDurationSampleCount = 0;
   let earliestDate = null;
 
   for (const row of rows) {
@@ -190,6 +217,16 @@ function aggregateEvents(rows, { range, startAt, now }) {
         durationTotal += durationSec;
         durationSampleCount += 1;
       }
+      const hospitalDurationSec = toFiniteNumber(row.metadata?.hospitalDurationSec);
+      if (hospitalDurationSec !== null && hospitalDurationSec > 0) {
+        hospitalDurationTotal += hospitalDurationSec;
+        hospitalDurationSampleCount += 1;
+      }
+      const squareDurationSec = toFiniteNumber(row.metadata?.squareDurationSec);
+      if (squareDurationSec !== null && squareDurationSec > 0) {
+        squareDurationTotal += squareDurationSec;
+        squareDurationSampleCount += 1;
+      }
     }
   }
 
@@ -214,6 +251,14 @@ function aggregateEvents(rows, { range, startAt, now }) {
       avgChatsPerVisitor: visitorCount ? round(chatSends / visitorCount) : 0,
       avgDurationSec: durationSampleCount ? round(durationTotal / durationSampleCount) : null,
       durationSampleCount,
+      avgHospitalDurationSec: hospitalDurationSampleCount
+        ? round(hospitalDurationTotal / hospitalDurationSampleCount)
+        : null,
+      hospitalDurationSampleCount,
+      avgSquareDurationSec: squareDurationSampleCount
+        ? round(squareDurationTotal / squareDurationSampleCount)
+        : null,
+      squareDurationSampleCount,
     },
     series: {
       dailyVisitors: fillDailySeries(dailyVisitorCounts, firstDate, lastDate),
@@ -322,12 +367,21 @@ async function handler(request, response) {
     }
 
     const now = new Date();
-    const startAt = range === "all" ? null : new Date(now.getTime() - RANGE_DURATIONS[range]);
+    const calendarRange = getCalendarRange(range, now);
+    const { startAt } = calendarRange;
     const rows = await fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug });
     debug.stage = "aggregation";
     const aggregated = aggregateEvents(rows, { range, startAt, now });
+    if (range === "all") {
+      calendarRange.startDate = aggregated.series.dailyVisitors[0]?.date || null;
+    }
     debug.stage = "complete";
-    return response.status(200).json({ range, generatedAt: now.toISOString(), ...aggregated });
+    return response.status(200).json({
+      range,
+      period: calendarRange,
+      generatedAt: now.toISOString(),
+      ...aggregated,
+    });
   } catch (error) {
     const secrets = [serviceRoleKey, supabaseUrl];
     const message = safeDebugMessage(error instanceof Error ? error.message : error, secrets);
@@ -351,3 +405,4 @@ async function handler(request, response) {
 module.exports = handler;
 module.exports.aggregateEvents = aggregateEvents;
 module.exports.getKstParts = getKstParts;
+module.exports.getCalendarRange = getCalendarRange;

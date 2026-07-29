@@ -911,17 +911,48 @@
       });
 
       const liveCountEl = document.getElementById("live-count");
+      const NPC_COUNT_STORAGE_KEY = "knockknockNpcCount";
+
+      function getNpcCount() {
+        const stored = Number(sessionStorage.getItem(NPC_COUNT_STORAGE_KEY));
+        if (Number.isInteger(stored) && stored >= 5 && stored <= 10) {
+          return stored;
+        }
+        const count = Math.floor(Math.random() * 6) + 5;
+        sessionStorage.setItem(NPC_COUNT_STORAGE_KEY, String(count));
+        return count;
+      }
 
       let presenceConn = null;
+      const npcCount = getNpcCount();
+      const sessionStartedAt = Date.now();
+      const pageDurationMs = { hospital: 0, square: 0 };
+      let activePage = "hospital";
+      let activePageStartedAt = sessionStartedAt;
+      let sessionEnded = false;
+
+      function recordActivePageDuration(now = Date.now()) {
+        pageDurationMs[activePage] += Math.max(0, now - activePageStartedAt);
+        activePageStartedAt = now;
+      }
+
+      function beginPageDuration(page) {
+        const now = Date.now();
+        recordActivePageDuration(now);
+        activePage = page;
+        activePageStartedAt = now;
+      }
 
       function switchToHospitalPresence() {
         if (presenceConn) presenceConn.disconnect();
+        beginPageDuration("hospital");
         setMetricsPage("hospital");
         void logEvent("door_enter");
+        liveCountEl.innerText = npcCount.toLocaleString();
         presenceConn = connectPresence({
           page: "hospital",
           onCountChange(count) {
-            liveCountEl.innerText = count.toLocaleString();
+            liveCountEl.innerText = (count + npcCount).toLocaleString();
           },
           onStatusChange(status) {
             if (status === "not-configured") {
@@ -935,13 +966,17 @@
 
       function switchToSquarePresence() {
         if (presenceConn) presenceConn.disconnect();
+        beginPageDuration("square");
         setMetricsPage("square");
         void logEvent("square_enter");
+        liveCountEl.innerText = npcCount.toLocaleString();
+        renderCharacters(npcCount);
         presenceConn = connectPresence({
           page: "square",
           onCountChange(count) {
-            liveCountEl.innerText = count.toLocaleString();
-            renderCharacters(count);
+            const publicCount = count + npcCount;
+            liveCountEl.innerText = publicCount.toLocaleString();
+            renderCharacters(publicCount);
           },
           onStatusChange(status) {
             if (status === "not-configured") {
@@ -952,9 +987,6 @@
           },
         });
       }
-
-      const sessionStartedAt = Date.now();
-      let sessionEnded = false;
 
       setMetricsPage("hospital");
       void logEvent("session_start");
@@ -971,11 +1003,17 @@
         clearInterval(heartbeatTimer);
         savePendingKnocks();
         flushKnockMetrics();
+        const endedAt = Date.now();
+        recordActivePageDuration(endedAt);
         const durationSec = Math.max(
           0,
-          Math.round((Date.now() - sessionStartedAt) / 1000),
+          Math.round((endedAt - sessionStartedAt) / 1000),
         );
-        void logEvent("session_end", { durationSec });
+        void logEvent("session_end", {
+          durationSec,
+          hospitalDurationSec: Math.round(pageDurationMs.hospital / 1000),
+          squareDurationSec: Math.round(pageDurationMs.square / 1000),
+        });
       }
 
       window.addEventListener("pagehide", finishMetricsSession, { once: true });

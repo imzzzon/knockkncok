@@ -25,6 +25,7 @@ const elements = {
   retryButton: document.getElementById("retry-button"),
   refreshButton: document.getElementById("refresh-button"),
   updatedAt: document.getElementById("updated-at"),
+  periodLabel: document.getElementById("period-label"),
 };
 
 function formatNumber(value) {
@@ -154,6 +155,10 @@ function renderMetrics(data) {
   setText("avg-chats", formatNumber(summary.avgChatsPerVisitor));
   setText("avg-duration", formatDuration(summary.avgDurationSec));
   setText("duration-samples", `유효 세션 ${formatNumber(summary.durationSampleCount)}개`);
+  setText("avg-hospital-duration", formatDuration(summary.avgHospitalDurationSec));
+  setText("hospital-duration-samples", `유효 세션 ${formatNumber(summary.hospitalDurationSampleCount)}개`);
+  setText("avg-square-duration", formatDuration(summary.avgSquareDurationSec));
+  setText("square-duration-samples", `유효 세션 ${formatNumber(summary.squareDurationSampleCount)}개`);
   setText("home-views", formatNumber(summary.homeViews));
   setText("knock-participants", formatNumber(summary.knockParticipants));
   setText("square-enters", formatNumber(summary.squareEnters));
@@ -161,6 +166,16 @@ function renderMetrics(data) {
 
   const generatedAt = new Date(data.generatedAt);
   elements.updatedAt.textContent = `마지막 갱신: ${Number.isNaN(generatedAt.getTime()) ? "—" : dateTimeFormatter.format(generatedAt)} KST`;
+  const { startDate, endDate } = data.period || {};
+  const compactDate = (date) => date ? date.slice(5).replace("-", "/") : null;
+  const periodText = selectedRange === "all"
+    ? startDate && endDate
+      ? `조회 기간 · ${compactDate(startDate)} – ${compactDate(endDate)}`
+      : "조회 기간 · 전체"
+    : startDate === endDate
+      ? `조회 기간 · ${compactDate(startDate)}`
+      : `조회 기간 · ${compactDate(startDate)} – ${compactDate(endDate)}`;
+  elements.periodLabel.textContent = periodText || "—";
 
   destroyCharts();
   renderChart({ canvasId: "daily-visitors-chart", emptyId: "daily-visitors-empty", series: series.dailyVisitors, type: "line", label: "방문자" });

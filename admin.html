@@ -19,13 +19,14 @@
         <div>
           <p class="eyebrow">INTERNAL ANALYTICS</p>
           <h1>문두드리기 대시보드</h1>
+          <p class="period-label" id="period-label">—</p>
           <p class="updated-at" id="updated-at">마지막 갱신: —</p>
         </div>
         <div class="header-actions">
           <div class="range-filter" role="group" aria-label="조회 기간">
-            <button type="button" data-range="day">일별</button>
-            <button type="button" data-range="week" class="active">주별</button>
-            <button type="button" data-range="month">월별</button>
+            <button type="button" data-range="day">오늘</button>
+            <button type="button" data-range="week" class="active">이번 주</button>
+            <button type="button" data-range="month">이번 달</button>
             <button type="button" data-range="all">전체</button>
           </div>
           <button type="button" class="refresh-button" id="refresh-button">
@@ -84,6 +85,20 @@
             </div>
             <strong id="avg-duration">데이터 부족</strong>
             <p id="duration-samples">유효 세션 0개</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">
+              메인 평균 체류시간 <span class="estimate-badge">추정값</span>
+            </div>
+            <strong id="avg-hospital-duration">데이터 부족</strong>
+            <p id="hospital-duration-samples">유효 세션 0개</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-title">
+              광장 평균 체류시간 <span class="estimate-badge">추정값</span>
+            </div>
+            <strong id="avg-square-duration">데이터 부족</strong>
+            <p id="square-duration-samples">유효 세션 0개</p>
           </article>
         </section>
 

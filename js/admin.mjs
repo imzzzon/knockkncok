@@ -151,6 +151,7 @@ function renderMetrics(data) {
   setText("return-rate", `재방문율 ${formatPercent(summary.returnRate)}`);
   setText("total-knocks", formatNumber(summary.totalKnocks));
   setText("avg-knocks", formatNumber(summary.avgKnocksPerVisitor));
+  setText("today-top-knocks", formatNumber(summary.todayTopKnocks));
   setText("chat-sends", formatNumber(summary.chatSends));
   setText("avg-chats", formatNumber(summary.avgChatsPerVisitor));
   setText("avg-duration", formatDuration(summary.avgDurationSec));
@@ -168,6 +169,10 @@ function renderMetrics(data) {
   elements.updatedAt.textContent = `마지막 갱신: ${Number.isNaN(generatedAt.getTime()) ? "—" : dateTimeFormatter.format(generatedAt)} KST`;
   const { startDate, endDate } = data.period || {};
   const compactDate = (date) => date ? date.slice(5).replace("-", "/") : null;
+  setText(
+    "today-top-knocks-period",
+    endDate ? `${compactDate(endDate)} 00:00부터 · KST` : "오늘 00:00부터 · KST",
+  );
   const periodText = selectedRange === "all"
     ? startDate && endDate
       ? `조회 기간 · ${compactDate(startDate)} – ${compactDate(endDate)}`

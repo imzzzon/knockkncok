@@ -166,6 +166,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
   const knockParticipants = new Set();
   const chatParticipants = new Set();
   const dailyKnocks = new Map();
+  const todayKnocksByVisitor = new Map();
   const dailyChats = new Map();
   let homeViews = 0;
   let squareEnters = 0;
@@ -178,6 +179,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
   let squareDurationTotal = 0;
   let squareDurationSampleCount = 0;
   let earliestDate = null;
+  const todayDate = getKstParts(now).date;
 
   for (const row of rows) {
     const createdAt = new Date(row.created_at);
@@ -203,6 +205,9 @@ function aggregateEvents(rows, { range, startAt, now }) {
       const count = toFiniteNumber(row.metadata?.count) ?? 0;
       totalKnocks += count;
       addToNumberMap(dailyKnocks, date, count);
+      if (visitorId && date === todayDate) {
+        addToNumberMap(todayKnocksByVisitor, visitorId, count);
+      }
     }
 
     if (row.event_name === "chat_send") {
@@ -235,6 +240,10 @@ function aggregateEvents(rows, { range, startAt, now }) {
   const lastDate = getKstParts(now).date;
   const firstDate = range === "all" ? earliestDate : getKstParts(startAt).date;
   const dailyVisitorCounts = new Map([...dailyVisitors].map(([date, set]) => [date, set.size]));
+  const todayTopKnocks = [...todayKnocksByVisitor.values()].reduce(
+    (highest, count) => Math.max(highest, count),
+    0,
+  );
 
   return {
     summary: {
@@ -247,6 +256,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
       chatParticipants: chatParticipants.size,
       totalKnocks: round(totalKnocks),
       avgKnocksPerVisitor: visitorCount ? round(totalKnocks / visitorCount) : 0,
+      todayTopKnocks: round(todayTopKnocks),
       chatSends,
       avgChatsPerVisitor: visitorCount ? round(chatSends / visitorCount) : 0,
       avgDurationSec: durationSampleCount ? round(durationTotal / durationSampleCount) : null,

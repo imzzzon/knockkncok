@@ -24,11 +24,15 @@
         </div>
         <div class="header-actions">
           <div class="range-filter" role="group" aria-label="조회 기간">
-            <button type="button" data-range="day">오늘</button>
+            <button type="button" data-range="day">일별</button>
             <button type="button" data-range="week" class="active">이번 주</button>
             <button type="button" data-range="month">이번 달</button>
             <button type="button" data-range="all">전체</button>
           </div>
+          <label class="date-filter" id="date-filter" hidden>
+            <span>조회 날짜</span>
+            <input type="date" id="day-picker" />
+          </label>
           <button type="button" class="refresh-button" id="refresh-button">
             <span aria-hidden="true">↻</span>
             새로고침
@@ -102,7 +106,8 @@
           </article>
           <article class="metric-card rank-card">
             <div class="metric-title">
-              오늘의 최고 정신병자 <span class="rank-badge">1위</span>
+              <span id="top-knocks-title">오늘의 최고 정신병자</span>
+              <span class="rank-badge">1위</span>
             </div>
             <strong><span id="today-top-knocks">0</span><small>회</small></strong>
             <p id="today-top-knocks-period">오늘 00:00부터 · KST</p>

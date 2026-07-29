@@ -26,7 +26,19 @@ const elements = {
   refreshButton: document.getElementById("refresh-button"),
   updatedAt: document.getElementById("updated-at"),
   periodLabel: document.getElementById("period-label"),
+  dateFilter: document.getElementById("date-filter"),
+  dayPicker: document.getElementById("day-picker"),
 };
+
+const kstDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const todayDate = kstDateFormatter.format(new Date());
+elements.dayPicker.value = todayDate;
+elements.dayPicker.max = todayDate;
 
 function formatNumber(value) {
   return numberFormatter.format(Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -54,6 +66,7 @@ function setLoading(isLoading) {
   elements.content.classList.toggle("is-loading", isLoading);
   elements.content.setAttribute("aria-busy", String(isLoading));
   elements.refreshButton.disabled = isLoading;
+  elements.dayPicker.disabled = isLoading;
   document.querySelectorAll("[data-range]").forEach((button) => {
     button.disabled = isLoading;
   });
@@ -171,7 +184,17 @@ function renderMetrics(data) {
   const compactDate = (date) => date ? date.slice(5).replace("-", "/") : null;
   setText(
     "today-top-knocks-period",
-    endDate ? `${compactDate(endDate)} 00:00부터 · KST` : "오늘 00:00부터 · KST",
+    selectedRange === "day" && endDate !== todayDate
+      ? `${compactDate(endDate)} 하루 · KST`
+      : endDate
+        ? `${compactDate(endDate)} 00:00부터 · KST`
+        : "오늘 00:00부터 · KST",
+  );
+  setText(
+    "top-knocks-title",
+    selectedRange === "day" && endDate !== todayDate
+      ? "해당 날짜 최고 정신병자"
+      : "오늘의 최고 정신병자",
   );
   const periodText = selectedRange === "all"
     ? startDate && endDate
@@ -197,7 +220,9 @@ async function loadMetrics() {
   setLoading(true);
 
   try {
-    const response = await fetch(`/api/admin-metrics?range=${encodeURIComponent(selectedRange)}`, {
+    const params = new URLSearchParams({ range: selectedRange });
+    if (selectedRange === "day") params.set("date", elements.dayPicker.value);
+    const response = await fetch(`/api/admin-metrics?${params}`, {
       headers: { Accept: "application/json" },
       cache: "no-store",
       signal: controller.signal,
@@ -262,8 +287,12 @@ document.querySelectorAll("[data-range]").forEach((button) => {
   button.addEventListener("click", () => {
     selectedRange = button.dataset.range;
     document.querySelectorAll("[data-range]").forEach((item) => item.classList.toggle("active", item === button));
+    elements.dateFilter.hidden = selectedRange !== "day";
     loadMetrics();
   });
+});
+elements.dayPicker.addEventListener("change", () => {
+  if (elements.dayPicker.value) loadMetrics();
 });
 elements.refreshButton.addEventListener("click", loadMetrics);
 elements.retryButton.addEventListener("click", loadMetrics);

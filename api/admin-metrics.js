@@ -34,9 +34,28 @@ function getKstParts(value) {
   };
 }
 
-function getCalendarRange(range, now) {
+function getKstDateStart(dateString) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString || "");
+  if (!match) return null;
+  const [, year, month, day] = match.map(Number);
+  const startAt = new Date(Date.UTC(year, month - 1, day) - KST_OFFSET_MS);
+  return getKstParts(startAt).date === dateString ? startAt : null;
+}
+
+function getCalendarRange(range, now, selectedDate = null) {
   if (range === "all") {
     return { startAt: null, startDate: null, endDate: getKstParts(now).date };
+  }
+
+  if (range === "day" && selectedDate) {
+    const startAt = getKstDateStart(selectedDate);
+    if (!startAt) return null;
+    return {
+      startAt,
+      endAt: new Date(startAt.getTime() + 24 * 60 * 60 * 1000),
+      startDate: selectedDate,
+      endDate: selectedDate,
+    };
   }
 
   // Shift KST wall-clock time into UTC fields so calendar arithmetic is
@@ -280,7 +299,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
   };
 }
 
-async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug }) {
+async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, endAt, debug }) {
   const rows = [];
   let offset = 0;
   let pageIndex = 0;
@@ -291,7 +310,8 @@ async function fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug }) {
     const url = new URL(`${supabaseUrl}/rest/v1/event_logs`);
     url.searchParams.set("select", "created_at,event_name,visitor_id,metadata");
     url.searchParams.set("order", "created_at.asc");
-    if (startAt) url.searchParams.set("created_at", `gte.${startAt.toISOString()}`);
+    if (startAt) url.searchParams.append("created_at", `gte.${startAt.toISOString()}`);
+    if (endAt) url.searchParams.append("created_at", `lt.${endAt.toISOString()}`);
 
     // TEMP DEBUG: Stage logs intentionally exclude URLs, keys, and row data.
     debug.stage = "before-fetch";
@@ -357,6 +377,12 @@ async function handler(request, response) {
   const rawRange = Array.isArray(request.query?.range) ? request.query.range[0] : request.query?.range;
   const range = rawRange || "week";
   if (!VALID_RANGES.has(range)) return response.status(400).json({ error: "올바르지 않은 조회 기간입니다" });
+  const rawDate = Array.isArray(request.query?.date) ? request.query.date[0] : request.query?.date;
+  const selectedDate = typeof rawDate === "string" && rawDate ? rawDate : null;
+  const todayDate = getKstParts(new Date()).date;
+  if (selectedDate && (range !== "day" || !getKstDateStart(selectedDate) || selectedDate > todayDate)) {
+    return response.status(400).json({ error: "올바르지 않은 조회 날짜입니다" });
+  }
 
   const debug = { stage: "start", status: null, message: "Request failed" };
   let supabaseUrl = "";
@@ -377,11 +403,12 @@ async function handler(request, response) {
     }
 
     const now = new Date();
-    const calendarRange = getCalendarRange(range, now);
-    const { startAt } = calendarRange;
-    const rows = await fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, debug });
+    const calendarRange = getCalendarRange(range, now, selectedDate);
+    const { startAt, endAt } = calendarRange;
+    const rows = await fetchAllEvents({ supabaseUrl, serviceRoleKey, startAt, endAt, debug });
     debug.stage = "aggregation";
-    const aggregated = aggregateEvents(rows, { range, startAt, now });
+    const aggregationNow = range === "day" && selectedDate ? startAt : now;
+    const aggregated = aggregateEvents(rows, { range, startAt, now: aggregationNow });
     if (range === "all") {
       calendarRange.startDate = aggregated.series.dailyVisitors[0]?.date || null;
     }
@@ -416,3 +443,4 @@ module.exports = handler;
 module.exports.aggregateEvents = aggregateEvents;
 module.exports.getKstParts = getKstParts;
 module.exports.getCalendarRange = getCalendarRange;
+module.exports.getKstDateStart = getKstDateStart;

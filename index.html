@@ -819,7 +819,8 @@
       const characterImgEl = document.getElementById("character-img");
 
       const USER_KNOCKS_STORAGE_KEY = "userKnocks";
-      let userKnocks = Number(localStorage.getItem(USER_KNOCKS_STORAGE_KEY)) || 0;
+      let userKnocks =
+        Number(localStorage.getItem(USER_KNOCKS_STORAGE_KEY)) || 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
@@ -828,8 +829,13 @@
 
       function updateKnockInstruction() {
         if (!doorInstructionEl) return;
-        const titleText = (document.title || document.getElementById("app-title")?.innerText || "").toString();
-        const inOnlineWard = titleText.includes("온라인") || titleText.includes("폐쇄병동");
+        const titleText = (
+          document.title ||
+          document.getElementById("app-title")?.innerText ||
+          ""
+        ).toString();
+        const inOnlineWard =
+          titleText.includes("온라인") || titleText.includes("폐쇄병동");
         const inPlaza = titleText.includes("광장");
         // 안내 문구는 '온라인 폐쇄병동' 페이지에서만 보이고, 광장에서는 숨김
         if (!inOnlineWard || inPlaza) {
@@ -913,6 +919,11 @@
             visualScale = scale * fitScale;
           }
         }
+
+        // 전체적으로 병원(문) 에셋을 약간 더 크게 보이게 하기 위한 전역 보정값
+        // 필요하면 이 수치(1.08)를 조정하세요 (예: 1.05: 5% 확대, 1.1: 10% 확대)
+        const DOOR_SCALE_BOOST = 1.08;
+        visualScale = visualScale * DOOR_SCALE_BOOST;
 
         doorImg.src = src;
         doorImg.style.setProperty("--door-scale", visualScale.toFixed(3));

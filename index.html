@@ -819,8 +819,11 @@
       const characterImgEl = document.getElementById("character-img");
 
       const USER_KNOCKS_STORAGE_KEY = "userKnocks";
-      let userKnocks =
-        Number(localStorage.getItem(USER_KNOCKS_STORAGE_KEY)) || 0;
+      // 새로고침하면 카운트가 초기화 되어야 하므로 로컬에 저장된 값은 로드하지 않습니다.
+      // (이전 구현은 localStorage에 값을 저장해 새로고침 후에도 유지되도록 했습니다.)
+      // 필요하면 나중에 세션 간 유지가 필요할 때만 로직을 변경하세요.
+      localStorage.removeItem(USER_KNOCKS_STORAGE_KEY);
+      let userKnocks = 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
@@ -920,9 +923,9 @@
           }
         }
 
-        // 전체적으로 병원(문) 에셋을 약간 더 크게 보이게 하기 위한 전역 보정값
-        // 필요하면 이 수치(1.08)를 조정하세요 (예: 1.05: 5% 확대, 1.1: 10% 확대)
-        const DOOR_SCALE_BOOST = 1.08;
+        // 전체적으로 병원(문) 에셋을 더 크게 보이게 하기 위한 전역 보정값
+        // 현재는 20% 확대: 1.20 (예: 1.05 = 5% 확대, 1.1 = 10% 확대)
+        const DOOR_SCALE_BOOST = 1.20;
         visualScale = visualScale * DOOR_SCALE_BOOST;
 
         doorImg.src = src;

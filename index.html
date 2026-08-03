@@ -220,7 +220,7 @@
         flex-shrink: 0;
       }
       .door-instruction {
-        display: block;
+        display: none;
         width: 100%;
         text-align: center;
         font-size: 14px;
@@ -229,6 +229,9 @@
         text-shadow: none;
         padding: 2px 8px 6px;
         pointer-events: none;
+      }
+      .door-instruction.show {
+        display: block;
       }
       .door-wrapper:active {
         transform: scale(0.95);
@@ -816,10 +819,30 @@
       const characterImgEl = document.getElementById("character-img");
 
       const USER_KNOCKS_STORAGE_KEY = "userKnocks";
-      let userKnocks = 0;
+      let userKnocks = Number(localStorage.getItem(USER_KNOCKS_STORAGE_KEY)) || 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
+
+      const doorInstructionEl = document.querySelector(".door-instruction");
+
+      function updateKnockInstruction() {
+        if (!doorInstructionEl) return;
+        const titleText = (document.title || document.getElementById("app-title")?.innerText || "").toString();
+        const inOnlineWard = titleText.includes("온라인") || titleText.includes("폐쇄병동");
+        const inPlaza = titleText.includes("광장");
+        // 안내 문구는 '온라인 폐쇄병동' 페이지에서만 보이고, 광장에서는 숨김
+        if (!inOnlineWard || inPlaza) {
+          doorInstructionEl.classList.remove("show");
+          return;
+        }
+        // 사용자가 한 번도 두드리지 않았을 때만 표시
+        if (userKnocks === 0) {
+          doorInstructionEl.classList.add("show");
+        } else {
+          doorInstructionEl.classList.remove("show");
+        }
+      }
 
       function flushKnockMetrics() {
         if (unloggedKnocks <= 0) return;
@@ -897,6 +920,8 @@
 
       userKnocksEl.innerText = userKnocks.toLocaleString();
       updateDoorImage(userKnocks);
+      // 초기 안내 문구 표시/숨김 설정
+      updateKnockInstruction();
 
       door.addEventListener("click", function () {
         if (isSquareMode) return;
@@ -904,7 +929,10 @@
         userKnocks += 1;
         unsavedKnocks += 1;
         unloggedKnocks += 1;
+        localStorage.setItem(USER_KNOCKS_STORAGE_KEY, String(userKnocks));
         userKnocksEl.innerText = userKnocks.toLocaleString();
+        // 안내 문구 상태 업데이트
+        updateKnockInstruction();
 
         if (unloggedKnocks >= 5) {
           flushKnockMetrics();

@@ -167,9 +167,52 @@
         opacity: 0.5;
       }
 
+      /* 진료받기 버튼은 광장 모드에서 숨김 (기존 동작 유지) */
       .app-container.square-mode .open-chat-btn,
       .app-container.square-mode .status-divider {
         display: none;
+      }
+
+      /* 공유 버튼은 진료받기와 동일한 스타일을 사용하되 기본적으로 숨김.
+         광장(=square-mode)에서만 보이도록 함 */
+      .share-btn {
+        display: none;
+        background: transparent;
+        border: none;
+        color: var(--gray-mid);
+        font-family: "Pretendard", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+        padding: 0;
+        margin: 0 8px 0 8px;
+        white-space: nowrap;
+        transition: opacity 0.2s ease;
+      }
+
+      .share-btn:active {
+        opacity: 0.5;
+      }
+
+      .app-container.square-mode .share-btn {
+        display: inline-block;
+      }
+
+      /* 광장에서는 '병원 문을 두드리세요' 안내를 항상 숨김 */
+      .app-container.square-mode .door-instruction {
+      display: none !important;
+      }
+
+      /* 오늘의 최고 횟수 표시(폐쇄병동의 내 카운트와 동일한 디자인)
+       기본적으로 숨겨두고 광장 모드에서만 보이도록 함 */
+      .today-top {
+      display: none;
+      }
+
+      .app-container.square-mode .today-top {
+      display: inline-flex; /* live-badge와 같은 인라인 플렉스 */
       }
 
       .live-badge {
@@ -677,12 +720,17 @@
           <h1 id="app-title" class="title-text">온라인 폐쇄병동</h1>
           <div class="status-row">
             <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
-            <button class="open-chat-btn" id="share-btn" title="공유하기">공유하기</button>
+            <button class="share-btn" id="share-btn" title="공유하기">공유하기</button>
             <span class="status-divider">⏐</span>
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
           <div class="live-badge">
             내가 두드린 횟수: <span id="user-knocks">0</span>회
+          </div>
+
+          <!-- 광장에서만 보이는 오늘의 최고 횟수 (live-badge와 동일한 디자인) -->
+          <div class="live-badge today-top" id="today-top" style="display:none;">
+            오늘의 최고: <span id="today-top-knocks">0</span>회
           </div>
         </div>
 
@@ -825,6 +873,12 @@
       // 필요하면 나중에 세션 간 유지가 필요할 때만 로직을 변경하세요.
       localStorage.removeItem(USER_KNOCKS_STORAGE_KEY);
       let userKnocks = 0;
+      // 오늘 날짜 키(지역 시간 기준 YYYY-MM-DD)
+      function getTodayKey() {
+        return 'todayTopKnocks:' + new Date().toLocaleDateString('en-CA');
+      }
+
+      let todayTopKnocks = Number(localStorage.getItem(getTodayKey())) || 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
@@ -938,6 +992,10 @@
       // 초기 안내 문구 표시/숨김 설정
       updateKnockInstruction();
 
+      // 오늘의 최고 초기값 표시 (광장에서만 보임)
+      const todayTopEl = document.getElementById('today-top-knocks');
+      if (todayTopEl) todayTopEl.innerText = String(todayTopKnocks);
+
       door.addEventListener("click", function () {
         if (isSquareMode) return;
 
@@ -948,6 +1006,19 @@
         userKnocksEl.innerText = userKnocks.toLocaleString();
         // 안내 문구 상태 업데이트
         updateKnockInstruction();
+
+        // 오늘의 최고 갱신 (로컬 저장)
+        try {
+          const todayKey = getTodayKey();
+          if (userKnocks > todayTopKnocks) {
+            todayTopKnocks = userKnocks;
+            localStorage.setItem(todayKey, String(todayTopKnocks));
+            const todayEl = document.getElementById('today-top-knocks');
+            if (todayEl) todayEl.innerText = String(todayTopKnocks);
+          }
+        } catch (e) {
+          // 저장 실패 시 무시
+        }
 
         if (unloggedKnocks >= 5) {
           flushKnockMetrics();
@@ -1463,6 +1534,19 @@
 
         localStorage.setItem(USER_KNOCKS_STORAGE_KEY, totalKnocks);
         unsavedKnocks = 0;
+
+        // 오늘의 최고 기록 갱신: totalKnocks는 로컬에 저장된 누적값
+        try {
+          const todayKey = getTodayKey();
+          if (totalKnocks > todayTopKnocks) {
+            todayTopKnocks = totalKnocks;
+            localStorage.setItem(todayKey, String(todayTopKnocks));
+            const todayEl = document.getElementById('today-top-knocks');
+            if (todayEl) todayEl.innerText = String(todayTopKnocks);
+          }
+        } catch (e) {
+          // 무시
+        }
       }
 
       toggleViewBtn.addEventListener("click", () => {

@@ -29,10 +29,16 @@
             <button type="button" data-range="month">이번 달</button>
             <button type="button" data-range="all">전체</button>
           </div>
-          <label class="date-filter" id="date-filter" hidden>
-            <span>조회 날짜</span>
-            <input type="date" id="day-picker" />
-          </label>
+          <div class="date-filter" id="date-filter" hidden>
+            <button type="button" class="date-arrow" id="previous-day" aria-label="전날 보기">◀</button>
+            <output id="selected-date-label" aria-live="polite">—</output>
+            <button type="button" class="date-arrow" id="next-day" aria-label="다음 날 보기">▶</button>
+            <span class="date-separator" aria-hidden="true"></span>
+            <button type="button" class="calendar-button" id="open-calendar" aria-label="달력에서 날짜 선택">
+              <span aria-hidden="true">📅</span>
+            </button>
+            <input type="date" id="day-picker" tabindex="-1" aria-hidden="true" />
+          </div>
           <button type="button" class="refresh-button" id="refresh-button">
             <span aria-hidden="true">↻</span>
             새로고침
@@ -104,7 +110,7 @@
             <strong id="avg-square-duration">데이터 부족</strong>
             <p id="square-duration-samples">유효 세션 0개</p>
           </article>
-          <article class="metric-card rank-card">
+          <article class="metric-card">
             <div class="metric-title">
               <span id="top-knocks-title">오늘의 최고 정신병자</span>
               <span class="rank-badge">1위</span>

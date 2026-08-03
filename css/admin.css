@@ -54,7 +54,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.045em; }
 .period-label + .updated-at { margin-top: 5px; }
 
 .header-actions { display: flex; align-items: center; gap: 12px; }
-.range-filter { display: flex; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.range-filter { display: flex; height: 43px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .range-filter button {
   min-width: 62px;
   padding: 8px 14px;
@@ -68,16 +68,24 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.045em; }
 .range-filter button.active { color: #fff; background: var(--blue); font-weight: 700; box-shadow: 0 2px 5px rgba(36, 107, 253, 0.2); }
 .range-filter button:focus-visible, .refresh-button:focus-visible, #retry-button:focus-visible { outline: 3px solid rgba(36, 107, 253, 0.25); outline-offset: 2px; }
 .range-filter button:disabled, .refresh-button:disabled { cursor: wait; opacity: 0.65; }
-.date-filter { display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700; }
+.date-filter { position: relative; display: flex; align-items: center; height: 43px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700; }
 .date-filter[hidden] { display: none; }
-.date-filter input { border: 0; color: var(--text); background: transparent; font: inherit; font-weight: 700; }
+.date-filter output { min-width: 82px; color: var(--text); text-align: center; font-size: 13px; }
+.date-filter button { display: grid; place-items: center; height: 33px; border: 0; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; }
+.date-filter button:hover { color: var(--text); background: #f7f8fa; }
+.date-filter button:focus-visible { outline: 3px solid rgba(36, 107, 253, 0.25); outline-offset: 1px; }
+.date-filter button:disabled { cursor: default; opacity: 0.3; }
+.date-arrow { width: 30px; font-size: 10px; }
+.date-separator { width: 1px; height: 21px; margin: 0 2px; background: var(--border); }
+.calendar-button { width: 35px; font-size: 16px; }
+.date-filter input { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 
 .refresh-button, #retry-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 43px;
+  height: 43px;
   padding: 0 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -119,9 +127,8 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.045em; }
 .live-card { border-color: #cfe9df; background: linear-gradient(135deg, #fff 50%, #f2fbf7); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(18, 168, 116, 0.1); }
 .estimate-badge { padding: 3px 6px; border-radius: 5px; color: #2955a3; background: var(--blue-soft); font-size: 10px; }
-.rank-card { border-color: #f1d59b; background: linear-gradient(135deg, #fff 48%, #fff8e8); }
-.rank-card strong small { margin-left: 4px; font-size: 14px; letter-spacing: 0; }
-.rank-badge { padding: 3px 7px; border-radius: 5px; color: #8a5b00; background: #fff0c7; font-size: 10px; }
+.metric-card strong small { margin-left: 4px; font-size: 14px; letter-spacing: 0; }
+.rank-badge { padding: 3px 7px; border-radius: 5px; color: #2955a3; background: var(--blue-soft); font-size: 10px; }
 
 .dashboard-grid { display: grid; gap: 18px; }
 .primary-grid { grid-template-columns: minmax(0, 2fr) minmax(310px, 0.8fr); }
@@ -166,7 +173,7 @@ h1 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.045em; }
 @media (max-width: 720px) {
   .dashboard-shell { padding: 24px 16px 44px; }
   .header-actions { align-items: stretch; flex-direction: column; }
-  .date-filter { min-height: 43px; justify-content: space-between; }
+  .date-filter { justify-content: space-between; }
   .range-filter { display: grid; grid-template-columns: repeat(4, 1fr); }
   .range-filter button { min-width: 0; padding-inline: 8px; }
   .refresh-button { width: 100%; }

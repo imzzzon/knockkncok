@@ -28,6 +28,10 @@ const elements = {
   periodLabel: document.getElementById("period-label"),
   dateFilter: document.getElementById("date-filter"),
   dayPicker: document.getElementById("day-picker"),
+  selectedDateLabel: document.getElementById("selected-date-label"),
+  previousDay: document.getElementById("previous-day"),
+  nextDay: document.getElementById("next-day"),
+  openCalendar: document.getElementById("open-calendar"),
 };
 
 const kstDateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -39,6 +43,24 @@ const kstDateFormatter = new Intl.DateTimeFormat("en-CA", {
 const todayDate = kstDateFormatter.format(new Date());
 elements.dayPicker.value = todayDate;
 elements.dayPicker.max = todayDate;
+
+function updateDateControls() {
+  const [year, month, day] = elements.dayPicker.value.split("-").map(Number);
+  elements.selectedDateLabel.textContent = `${year}. ${month}. ${day}.`;
+  elements.nextDay.disabled = elements.dayPicker.value >= todayDate;
+}
+
+function shiftSelectedDate(dayOffset) {
+  const date = new Date(`${elements.dayPicker.value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+  const nextValue = date.toISOString().slice(0, 10);
+  if (nextValue > todayDate) return;
+  elements.dayPicker.value = nextValue;
+  updateDateControls();
+  loadMetrics();
+}
+
+updateDateControls();
 
 function formatNumber(value) {
   return numberFormatter.format(Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -67,6 +89,9 @@ function setLoading(isLoading) {
   elements.content.setAttribute("aria-busy", String(isLoading));
   elements.refreshButton.disabled = isLoading;
   elements.dayPicker.disabled = isLoading;
+  elements.previousDay.disabled = isLoading;
+  elements.openCalendar.disabled = isLoading;
+  elements.nextDay.disabled = isLoading || elements.dayPicker.value >= todayDate;
   document.querySelectorAll("[data-range]").forEach((button) => {
     button.disabled = isLoading;
   });
@@ -292,7 +317,20 @@ document.querySelectorAll("[data-range]").forEach((button) => {
   });
 });
 elements.dayPicker.addEventListener("change", () => {
-  if (elements.dayPicker.value) loadMetrics();
+  if (elements.dayPicker.value) {
+    updateDateControls();
+    loadMetrics();
+  }
+});
+elements.previousDay.addEventListener("click", () => shiftSelectedDate(-1));
+elements.nextDay.addEventListener("click", () => shiftSelectedDate(1));
+elements.openCalendar.addEventListener("click", () => {
+  if (typeof elements.dayPicker.showPicker === "function") {
+    elements.dayPicker.showPicker();
+  } else {
+    elements.dayPicker.focus();
+    elements.dayPicker.click();
+  }
 });
 elements.refreshButton.addEventListener("click", loadMetrics);
 elements.retryButton.addEventListener("click", loadMetrics);

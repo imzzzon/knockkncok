@@ -677,6 +677,7 @@
           <h1 id="app-title" class="title-text">온라인 폐쇄병동</h1>
           <div class="status-row">
             <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
+            <button class="open-chat-btn" id="share-btn" title="공유하기">공유하기</button>
             <span class="status-divider">⏐</span>
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
@@ -1492,6 +1493,44 @@
             hasOpenedChat = true;
           }
         });
+
+      // 공유 버튼 동작: Web Share API를 우선 사용, 없으면 클립보드 복사 후 알림
+      const shareBtn = document.getElementById("share-btn");
+      if (shareBtn) {
+        shareBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const shareData = {
+            title: document.title || "온라인 폐쇄병동",
+            text: "지금 함께 두드리고 있어요!",
+            url: location.href,
+          };
+
+          if (navigator.share) {
+            try {
+              await navigator.share(shareData);
+            } catch (err) {
+              // 사용자가 공유를 취소했을 수 있음 — 무시
+            }
+            return;
+          }
+
+          // Web Share API가 없으면 클립보드에 복사 시도
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+              await navigator.clipboard.writeText(location.href);
+              // 간단한 피드백
+              alert("공유 링크가 복사되었습니다: 주소를 붙여넣기 해주세요.");
+            } catch (err) {
+              // 클립보드 복사 실패 시 대체 UI
+              prompt("이 링크를 복사하세요:", location.href);
+            }
+            return;
+          }
+
+          // 그 외 환경에서는 prompt로 링크 제공
+          prompt("이 링크를 복사하세요:", location.href);
+        });
+      }
       document
         .getElementById("close-chat-btn")
         .addEventListener("click", () => {

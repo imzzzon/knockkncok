@@ -197,6 +197,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
   let hospitalDurationSampleCount = 0;
   let squareDurationTotal = 0;
   let squareDurationSampleCount = 0;
+  let todayTopKnocks = 0;
   let earliestDate = null;
   const todayDate = getKstParts(now).date;
 
@@ -224,8 +225,12 @@ function aggregateEvents(rows, { range, startAt, now }) {
       const count = toFiniteNumber(row.metadata?.count) ?? 0;
       totalKnocks += count;
       addToNumberMap(dailyKnocks, date, count);
-      if (visitorId && date === todayDate) {
-        addToNumberMap(todayKnocksByVisitor, visitorId, count);
+      if (date === todayDate) {
+        if (visitorId) addToNumberMap(todayKnocksByVisitor, visitorId, count);
+        const sessionTotalKnocks = toFiniteNumber(row.metadata?.totalKnocks);
+        if (sessionTotalKnocks !== null) {
+          todayTopKnocks = Math.max(todayTopKnocks, sessionTotalKnocks);
+        }
       }
     }
 
@@ -259,11 +264,10 @@ function aggregateEvents(rows, { range, startAt, now }) {
   const lastDate = getKstParts(now).date;
   const firstDate = range === "all" ? earliestDate : getKstParts(startAt).date;
   const dailyVisitorCounts = new Map([...dailyVisitors].map(([date, set]) => [date, set.size]));
-  const todayTopKnocks = [...todayKnocksByVisitor.values()].reduce(
+  const todayTopDailyKnocks = [...todayKnocksByVisitor.values()].reduce(
     (highest, count) => Math.max(highest, count),
     0,
   );
-
   return {
     summary: {
       visitors: visitorCount,
@@ -276,6 +280,7 @@ function aggregateEvents(rows, { range, startAt, now }) {
       totalKnocks: round(totalKnocks),
       avgKnocksPerVisitor: visitorCount ? round(totalKnocks / visitorCount) : 0,
       todayTopKnocks: round(todayTopKnocks),
+      todayTopDailyKnocks: round(todayTopDailyKnocks),
       chatSends,
       avgChatsPerVisitor: visitorCount ? round(chatSends / visitorCount) : 0,
       avgDurationSec: durationSampleCount ? round(durationTotal / durationSampleCount) : null,

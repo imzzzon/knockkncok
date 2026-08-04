@@ -190,6 +190,7 @@ function renderMetrics(data) {
   setText("total-knocks", formatNumber(summary.totalKnocks));
   setText("avg-knocks", formatNumber(summary.avgKnocksPerVisitor));
   setText("today-top-knocks", formatNumber(summary.todayTopKnocks));
+  setText("today-top-daily-knocks", formatNumber(summary.todayTopDailyKnocks));
   setText("chat-sends", formatNumber(summary.chatSends));
   setText("avg-chats", formatNumber(summary.avgChatsPerVisitor));
   setText("avg-duration", formatDuration(summary.avgDurationSec));
@@ -216,10 +217,24 @@ function renderMetrics(data) {
         : "오늘 00:00부터 · KST",
   );
   setText(
+    "today-top-daily-knocks-period",
+    selectedRange === "day" && endDate !== todayDate
+      ? `${compactDate(endDate)} 하루 · KST`
+      : endDate
+        ? `${compactDate(endDate)} 00:00부터 · KST`
+        : "오늘 00:00부터 · KST",
+  );
+  setText(
     "top-knocks-title",
     selectedRange === "day" && endDate !== todayDate
-      ? "해당 날짜 최고 정신병자"
-      : "오늘의 최고 정신병자",
+      ? "해당 날짜 최고 노크 수"
+      : "오늘의 최고 노크 수",
+  );
+  setText(
+    "top-daily-knocks-title",
+    selectedRange === "day" && endDate !== todayDate
+      ? "해당 날짜 최고 개인 하루 누적 노크 수"
+      : "오늘의 최고 개인 하루 누적 노크 수",
   );
   const periodText = selectedRange === "all"
     ? startDate && endDate

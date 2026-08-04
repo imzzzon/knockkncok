@@ -45,6 +45,7 @@ export function connectPresence({
     onStatusChange?.("not-configured");
     return {
       disconnect() {},
+      async updatePresenceMetadata() {},
     };
   }
 
@@ -53,7 +54,7 @@ export function connectPresence({
     channel = supabase.channel(PRESENCE_CHANNEL, {
       config: {
         presence: {
-          key: `${visitorId}:${page}`,
+          key: visitorId,
         },
       },
     });

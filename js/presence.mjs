@@ -41,6 +41,7 @@ export function connectPresence({
 }) {
   let channel = null;
   let countUpdateTimer = null;
+  let lastAppliedCount = null;
 
   if (!isSupabaseConfigured) {
     onStatusChange?.("not-configured");
@@ -63,11 +64,15 @@ export function connectPresence({
     const updateCount = () => {
       const state = channel?.presenceState?.() || {};
       const nextCount = countPresenceState(state);
+      if (nextCount === lastAppliedCount) {
+        return;
+      }
       if (countUpdateTimer) {
         clearTimeout(countUpdateTimer);
       }
       countUpdateTimer = setTimeout(() => {
         countUpdateTimer = null;
+        lastAppliedCount = nextCount;
         onCountChange(nextCount);
         onPresenceMetadataChange?.(getHighestKnocksCount(state));
       }, 120);
@@ -104,6 +109,7 @@ export function connectPresence({
     channel.untrack();
     supabase.removeChannel(channel);
     channel = null;
+    lastAppliedCount = null;
   };
 
   const updatePresenceMetadata = async (overrideMetadata = {}) => {
@@ -119,11 +125,15 @@ export function connectPresence({
 
     const state = channel?.presenceState?.() || {};
     const nextCount = countPresenceState(state);
+    if (nextCount === lastAppliedCount) {
+      return;
+    }
     if (countUpdateTimer) {
       clearTimeout(countUpdateTimer);
     }
     countUpdateTimer = setTimeout(() => {
       countUpdateTimer = null;
+      lastAppliedCount = nextCount;
       onCountChange(nextCount);
       onPresenceMetadataChange?.(getHighestKnocksCount(state));
     }, 120);

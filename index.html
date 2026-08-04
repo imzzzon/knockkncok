@@ -737,12 +737,12 @@
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
           <div class="live-badge">
-            내가 두드린 횟수: <span id="user-knocks">0</span>회
+            내가 두드린 횟수:&nbsp;<span id="user-knocks">0</span>회
           </div>
 
           <!-- 광장에서만 보이는 오늘의 최고 횟수 (live-badge와 동일한 디자인) -->
           <div class="live-badge today-top" id="today-top">
-            오늘의 최고 정신병 두드림: <span id="today-top-knocks">0</span>회
+            오늘의 최고 정신병 두드림:&nbsp;<span id="today-top-knocks">0</span>회
           </div>
         </div>
 
@@ -884,7 +884,6 @@
       // 필요하면 나중에 세션 간 유지가 필요할 때만 로직을 변경하세요.
       localStorage.removeItem(USER_KNOCKS_STORAGE_KEY);
       let userKnocks = 0;
-      let highestOnlineKnocks = 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
@@ -1024,8 +1023,50 @@
         const nextValue = Number.isFinite(value)
           ? Math.max(0, Math.floor(Number(value) || 0))
           : 0;
-        highestOnlineKnocks = nextValue;
         if (todayTopEl) todayTopEl.innerText = nextValue.toLocaleString();
+      }
+
+      let todayTopRequestController = null;
+      let todayTopRefreshTimer = null;
+
+      async function loadDashboardTodayTopKnocks() {
+        todayTopRequestController?.abort();
+        const controller = new AbortController();
+        todayTopRequestController = controller;
+
+        try {
+          const response = await fetch("/api/admin-metrics?range=day", {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error("today-top-request-failed");
+
+          const data = await response.json();
+          const value = Number(data?.summary?.todayTopKnocks);
+          if (Number.isFinite(value)) setTodayTopKnocksDisplay(value);
+        } catch (error) {
+          if (error.name !== "AbortError") {
+            console.error("오늘의 최고 두드림을 불러오지 못했습니다.", error);
+          }
+        } finally {
+          if (todayTopRequestController === controller) {
+            todayTopRequestController = null;
+          }
+        }
+      }
+
+      function startTodayTopRefresh() {
+        stopTodayTopRefresh();
+        void loadDashboardTodayTopKnocks();
+        todayTopRefreshTimer = setInterval(loadDashboardTodayTopKnocks, 5000);
+      }
+
+      function stopTodayTopRefresh() {
+        if (todayTopRefreshTimer) clearInterval(todayTopRefreshTimer);
+        todayTopRefreshTimer = null;
+        todayTopRequestController?.abort();
+        todayTopRequestController = null;
       }
 
       function setTodayTopVisibility(visible) {
@@ -1143,9 +1184,6 @@
               );
             }
           },
-          onPresenceMetadataChange(value) {
-            setTodayTopKnocksDisplay(value);
-          },
           getPresenceMetadata() {
             return { knocks_count: userKnocks };
           },
@@ -1172,9 +1210,6 @@
                 "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
               );
             }
-          },
-          onPresenceMetadataChange(value) {
-            setTodayTopKnocksDisplay(value);
           },
           getPresenceMetadata() {
             return { knocks_count: userKnocks };
@@ -1595,11 +1630,13 @@
           appTitle.innerText = "광장";
           switchToSquarePresence();
           setTodayTopVisibility(true);
+          startTodayTopRefresh();
           animateCharacters();
         } else {
           appContainer.classList.remove("square-mode");
           appTitle.innerText = "온라인 폐쇄병동";
           setTodayTopVisibility(false);
+          stopTodayTopRefresh();
           switchToHospitalPresence();
         }
       });

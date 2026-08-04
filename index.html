@@ -208,11 +208,11 @@
       /* 오늘의 최고 횟수 표시(폐쇄병동의 내 카운트와 동일한 디자인)
        기본적으로 숨겨두고 광장 모드에서만 보이도록 함 */
       .today-top {
-        display: none;
+        display: none !important;
       }
 
       .app-container.square-mode .today-top {
-        display: inline-flex; /* live-badge와 같은 인라인 플렉스 */
+        display: inline-flex !important; /* live-badge와 같은 인라인 플렉스 */
       }
 
       .live-badge {

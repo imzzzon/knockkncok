@@ -202,17 +202,17 @@
 
       /* 광장에서는 '병원 문을 두드리세요' 안내를 항상 숨김 */
       .app-container.square-mode .door-instruction {
-      display: none !important;
+        display: none !important;
       }
 
       /* 오늘의 최고 횟수 표시(폐쇄병동의 내 카운트와 동일한 디자인)
        기본적으로 숨겨두고 광장 모드에서만 보이도록 함 */
       .today-top {
-      display: none;
+        display: none;
       }
 
       .app-container.square-mode .today-top {
-      display: inline-flex; /* live-badge와 같은 인라인 플렉스 */
+        display: inline-flex; /* live-badge와 같은 인라인 플렉스 */
       }
 
       .live-badge {
@@ -720,7 +720,9 @@
           <h1 id="app-title" class="title-text">온라인 폐쇄병동</h1>
           <div class="status-row">
             <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
-            <button class="share-btn" id="share-btn" title="공유하기">공유하기</button>
+            <button class="share-btn" id="share-btn" title="공유하기">
+              공유하기
+            </button>
             <span class="status-divider">⏐</span>
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
@@ -729,8 +731,12 @@
           </div>
 
           <!-- 광장에서만 보이는 오늘의 최고 횟수 (live-badge와 동일한 디자인) -->
-          <div class="live-badge today-top" id="today-top" style="display:none;">
-            오늘의 최고: <span id="today-top-knocks">0</span>회
+          <div
+            class="live-badge today-top"
+            id="today-top"
+            style="display: none"
+          >
+            오늘의 최고 횟수: <span id="today-top-knocks">0</span>회
           </div>
         </div>
 
@@ -873,12 +879,7 @@
       // 필요하면 나중에 세션 간 유지가 필요할 때만 로직을 변경하세요.
       localStorage.removeItem(USER_KNOCKS_STORAGE_KEY);
       let userKnocks = 0;
-      // 오늘 날짜 키(지역 시간 기준 YYYY-MM-DD)
-      function getTodayKey() {
-        return 'todayTopKnocks:' + new Date().toLocaleDateString('en-CA');
-      }
-
-      let todayTopKnocks = Number(localStorage.getItem(getTodayKey())) || 0;
+      let highestOnlineKnocks = 0;
       let unsavedKnocks = 0;
       let unloggedKnocks = 0;
       let nextChangeCount = userKnocks + Math.floor(Math.random() * 3) + 3;
@@ -980,7 +981,7 @@
 
         // 전체적으로 병원(문) 에셋을 더 크게 보이게 하기 위한 전역 보정값
         // 현재는 20% 확대: 1.20 (예: 1.05 = 5% 확대, 1.1 = 10% 확대)
-        const DOOR_SCALE_BOOST = 1.20;
+        const DOOR_SCALE_BOOST = 1.2;
         visualScale = visualScale * DOOR_SCALE_BOOST;
 
         doorImg.src = src;
@@ -992,9 +993,26 @@
       // 초기 안내 문구 표시/숨김 설정
       updateKnockInstruction();
 
-      // 오늘의 최고 초기값 표시 (광장에서만 보임)
-      const todayTopEl = document.getElementById('today-top-knocks');
-      if (todayTopEl) todayTopEl.innerText = String(todayTopKnocks);
+      const todayTopEl = document.getElementById("today-top-knocks");
+
+      function setTodayTopKnocksDisplay(value) {
+        const nextValue = Number.isFinite(value)
+          ? Math.max(0, Math.floor(Number(value) || 0))
+          : 0;
+        highestOnlineKnocks = nextValue;
+        if (todayTopEl) todayTopEl.innerText = nextValue.toLocaleString();
+      }
+
+      function syncPresenceMetadata() {
+        if (presenceConn?.updatePresenceMetadata) {
+          return presenceConn.updatePresenceMetadata({
+            knocks_count: userKnocks,
+          });
+        }
+        return Promise.resolve();
+      }
+
+      setTodayTopKnocksDisplay(0);
 
       door.addEventListener("click", function () {
         if (isSquareMode) return;
@@ -1007,18 +1025,7 @@
         // 안내 문구 상태 업데이트
         updateKnockInstruction();
 
-        // 오늘의 최고 갱신 (로컬 저장)
-        try {
-          const todayKey = getTodayKey();
-          if (userKnocks > todayTopKnocks) {
-            todayTopKnocks = userKnocks;
-            localStorage.setItem(todayKey, String(todayTopKnocks));
-            const todayEl = document.getElementById('today-top-knocks');
-            if (todayEl) todayEl.innerText = String(todayTopKnocks);
-          }
-        } catch (e) {
-          // 저장 실패 시 무시
-        }
+        void syncPresenceMetadata();
 
         if (unloggedKnocks >= 5) {
           flushKnockMetrics();
@@ -1106,6 +1113,12 @@
               );
             }
           },
+          onPresenceMetadataChange(value) {
+            setTodayTopKnocksDisplay(value);
+          },
+          getPresenceMetadata() {
+            return { knocks_count: userKnocks };
+          },
         });
       }
 
@@ -1129,6 +1142,12 @@
                 "Supabase 설정이 비어 있습니다. js/supabase-config.mjs에 Project URL과 publishable key를 넣어주세요.",
               );
             }
+          },
+          onPresenceMetadataChange(value) {
+            setTodayTopKnocksDisplay(value);
+          },
+          getPresenceMetadata() {
+            return { knocks_count: userKnocks };
           },
         });
       }
@@ -1535,18 +1554,7 @@
         localStorage.setItem(USER_KNOCKS_STORAGE_KEY, totalKnocks);
         unsavedKnocks = 0;
 
-        // 오늘의 최고 기록 갱신: totalKnocks는 로컬에 저장된 누적값
-        try {
-          const todayKey = getTodayKey();
-          if (totalKnocks > todayTopKnocks) {
-            todayTopKnocks = totalKnocks;
-            localStorage.setItem(todayKey, String(todayTopKnocks));
-            const todayEl = document.getElementById('today-top-knocks');
-            if (todayEl) todayEl.innerText = String(todayTopKnocks);
-          }
-        } catch (e) {
-          // 무시
-        }
+        void syncPresenceMetadata();
       }
 
       toggleViewBtn.addEventListener("click", () => {

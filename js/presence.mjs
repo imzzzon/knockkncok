@@ -12,7 +12,33 @@ function countPresenceState(state) {
   }, 0);
 }
 
-export function connectPresence({ page, onCountChange, onStatusChange }) {
+function getHighestKnocksCount(state) {
+  let highest = 0;
+
+  Object.values(state).forEach((presences) => {
+    presences.forEach((presence) => {
+      const value = Number(
+        presence?.knocks_count ??
+          presence?.total_knocks ??
+          presence?.count ??
+          0,
+      );
+      if (Number.isFinite(value) && value > highest) {
+        highest = value;
+      }
+    });
+  });
+
+  return highest;
+}
+
+export function connectPresence({
+  page,
+  onCountChange,
+  onStatusChange,
+  onPresenceMetadataChange,
+  getPresenceMetadata,
+}) {
   let channel = null;
 
   if (!isSupabaseConfigured) {
@@ -33,7 +59,9 @@ export function connectPresence({ page, onCountChange, onStatusChange }) {
     });
 
     const updateCount = () => {
-      onCountChange(countPresenceState(channel.presenceState()));
+      const state = channel?.presenceState?.() || {};
+      onCountChange(countPresenceState(state));
+      onPresenceMetadataChange?.(getHighestKnocksCount(state));
     };
 
     channel.on("presence", { event: "sync" }, updateCount);
@@ -46,6 +74,7 @@ export function connectPresence({ page, onCountChange, onStatusChange }) {
           page,
           online_at: new Date().toISOString(),
           visitor_id: visitorId,
+          ...(getPresenceMetadata?.() || {}),
         });
         updateCount();
       }
@@ -63,9 +92,26 @@ export function connectPresence({ page, onCountChange, onStatusChange }) {
     supabase.removeChannel(channel);
   };
 
+  const updatePresenceMetadata = async (overrideMetadata = {}) => {
+    if (!channel) return;
+
+    await channel.track({
+      page,
+      online_at: new Date().toISOString(),
+      visitor_id: getVisitorId(),
+      ...(getPresenceMetadata?.() || {}),
+      ...overrideMetadata,
+    });
+
+    const state = channel?.presenceState?.() || {};
+    onCountChange(countPresenceState(state));
+    onPresenceMetadataChange?.(getHighestKnocksCount(state));
+  };
+
   window.addEventListener("pagehide", disconnect, { once: true });
 
   return {
     disconnect,
+    updatePresenceMetadata,
   };
 }

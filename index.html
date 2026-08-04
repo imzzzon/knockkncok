@@ -990,6 +990,7 @@
       updateKnockInstruction();
 
       const todayTopEl = document.getElementById("today-top-knocks");
+      const todayTopBadge = document.getElementById("today-top");
 
       function setTodayTopKnocksDisplay(value) {
         const nextValue = Number.isFinite(value)
@@ -997,6 +998,11 @@
           : 0;
         highestOnlineKnocks = nextValue;
         if (todayTopEl) todayTopEl.innerText = nextValue.toLocaleString();
+      }
+
+      function setTodayTopVisibility(visible) {
+        if (!todayTopBadge) return;
+        todayTopBadge.style.display = visible ? "inline-flex" : "none";
       }
 
       function syncPresenceMetadata() {
@@ -1560,10 +1566,12 @@
           appContainer.classList.add("square-mode");
           appTitle.innerText = "광장";
           switchToSquarePresence();
+          setTodayTopVisibility(true);
           animateCharacters();
         } else {
           appContainer.classList.remove("square-mode");
           appTitle.innerText = "온라인 폐쇄병동";
+          setTodayTopVisibility(false);
           switchToHospitalPresence();
         }
       });

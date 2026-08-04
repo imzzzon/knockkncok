@@ -42,6 +42,41 @@ export function connectPresence({
   let channel = null;
   let countUpdateTimer = null;
   let lastAppliedCount = null;
+  let pendingCount = null;
+  let pendingMetadata = null;
+  let isBootstrapping = true;
+
+  const applyPendingCount = () => {
+    if (pendingCount === null) return;
+    if (pendingCount === lastAppliedCount) {
+      pendingCount = null;
+      pendingMetadata = null;
+      return;
+    }
+
+    lastAppliedCount = pendingCount;
+    onCountChange(pendingCount);
+    onPresenceMetadataChange?.(pendingMetadata);
+    pendingCount = null;
+    pendingMetadata = null;
+  };
+
+  const scheduleCountUpdate = (nextCount, state) => {
+    pendingCount = nextCount;
+    pendingMetadata = getHighestKnocksCount(state);
+
+    if (countUpdateTimer) {
+      clearTimeout(countUpdateTimer);
+    }
+
+    countUpdateTimer = setTimeout(() => {
+      countUpdateTimer = null;
+      if (isBootstrapping && lastAppliedCount === null) {
+        isBootstrapping = false;
+      }
+      applyPendingCount();
+    }, 500);
+  };
 
   if (!isSupabaseConfigured) {
     onStatusChange?.("not-configured");
@@ -64,18 +99,7 @@ export function connectPresence({
     const updateCount = () => {
       const state = channel?.presenceState?.() || {};
       const nextCount = countPresenceState(state);
-      if (nextCount === lastAppliedCount) {
-        return;
-      }
-      if (countUpdateTimer) {
-        clearTimeout(countUpdateTimer);
-      }
-      countUpdateTimer = setTimeout(() => {
-        countUpdateTimer = null;
-        lastAppliedCount = nextCount;
-        onCountChange(nextCount);
-        onPresenceMetadataChange?.(getHighestKnocksCount(state));
-      }, 120);
+      scheduleCountUpdate(nextCount, state);
     };
 
     channel.on("presence", { event: "sync" }, updateCount);
@@ -110,6 +134,9 @@ export function connectPresence({
     supabase.removeChannel(channel);
     channel = null;
     lastAppliedCount = null;
+    pendingCount = null;
+    pendingMetadata = null;
+    isBootstrapping = true;
   };
 
   const updatePresenceMetadata = async (overrideMetadata = {}) => {
@@ -125,18 +152,7 @@ export function connectPresence({
 
     const state = channel?.presenceState?.() || {};
     const nextCount = countPresenceState(state);
-    if (nextCount === lastAppliedCount) {
-      return;
-    }
-    if (countUpdateTimer) {
-      clearTimeout(countUpdateTimer);
-    }
-    countUpdateTimer = setTimeout(() => {
-      countUpdateTimer = null;
-      lastAppliedCount = nextCount;
-      onCountChange(nextCount);
-      onPresenceMetadataChange?.(getHighestKnocksCount(state));
-    }, 120);
+    scheduleCountUpdate(nextCount, state);
   };
 
   window.addEventListener("pagehide", disconnect, { once: true });

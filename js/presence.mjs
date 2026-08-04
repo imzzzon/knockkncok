@@ -45,9 +45,16 @@ export function connectPresence({
   let pendingCount = null;
   let pendingMetadata = null;
   let isBootstrapping = true;
+  let hasIgnoredInitialCount = false;
 
   const applyPendingCount = () => {
     if (pendingCount === null) return;
+    if (!hasIgnoredInitialCount && lastAppliedCount === null) {
+      hasIgnoredInitialCount = true;
+      pendingCount = null;
+      pendingMetadata = null;
+      return;
+    }
     if (pendingCount === lastAppliedCount) {
       pendingCount = null;
       pendingMetadata = null;
@@ -137,6 +144,7 @@ export function connectPresence({
     pendingCount = null;
     pendingMetadata = null;
     isBootstrapping = true;
+    hasIgnoredInitialCount = false;
   };
 
   const updatePresenceMetadata = async (overrideMetadata = {}) => {

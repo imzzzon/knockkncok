@@ -40,6 +40,7 @@ export function connectPresence({
   getPresenceMetadata,
 }) {
   let channel = null;
+  let countUpdateTimer = null;
 
   if (!isSupabaseConfigured) {
     onStatusChange?.("not-configured");
@@ -61,8 +62,15 @@ export function connectPresence({
 
     const updateCount = () => {
       const state = channel?.presenceState?.() || {};
-      onCountChange(countPresenceState(state));
-      onPresenceMetadataChange?.(getHighestKnocksCount(state));
+      const nextCount = countPresenceState(state);
+      if (countUpdateTimer) {
+        clearTimeout(countUpdateTimer);
+      }
+      countUpdateTimer = setTimeout(() => {
+        countUpdateTimer = null;
+        onCountChange(nextCount);
+        onPresenceMetadataChange?.(getHighestKnocksCount(state));
+      }, 120);
     };
 
     channel.on("presence", { event: "sync" }, updateCount);
@@ -88,9 +96,14 @@ export function connectPresence({
   });
 
   const disconnect = () => {
+    if (countUpdateTimer) {
+      clearTimeout(countUpdateTimer);
+      countUpdateTimer = null;
+    }
     if (!channel) return;
     channel.untrack();
     supabase.removeChannel(channel);
+    channel = null;
   };
 
   const updatePresenceMetadata = async (overrideMetadata = {}) => {
@@ -105,8 +118,15 @@ export function connectPresence({
     });
 
     const state = channel?.presenceState?.() || {};
-    onCountChange(countPresenceState(state));
-    onPresenceMetadataChange?.(getHighestKnocksCount(state));
+    const nextCount = countPresenceState(state);
+    if (countUpdateTimer) {
+      clearTimeout(countUpdateTimer);
+    }
+    countUpdateTimer = setTimeout(() => {
+      countUpdateTimer = null;
+      onCountChange(nextCount);
+      onPresenceMetadataChange?.(getHighestKnocksCount(state));
+    }, 120);
   };
 
   window.addEventListener("pagehide", disconnect, { once: true });

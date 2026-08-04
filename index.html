@@ -17,7 +17,7 @@
     />
     <!-- ⚠️ 주의: 건물 단계 이미지를 13단계의 SVG 자산으로 사용합니다. -->
     <!-- ⚠️ 주의: 배포 후에는 'https://내웹사이트주소.com/img/Level_01.svg' 처럼 절대 경로를 적어주는 것이 가장 확실합니다. -->
-    <meta property="og:image" content="img/Level_01.svg" />
+    <meta property="og:image" content="img/Thumbnail.png" />
 
     <!-- 👇 트위터(X) 공유 썸네일 설정을 위한 Twitter Card 태그 추가 👇 -->
     <meta name="twitter:card" content="summary" />
@@ -26,7 +26,7 @@
       name="twitter:description"
       content="오늘 할 일: 살아 있기. 온라인 폐쇄병동에서 함께해요."
     />
-    <meta name="twitter:image" content="img/Level_01.svg" />
+    <meta name="twitter:image" content="img/Thumbnail.png" />
     <!-- 👆 여기까지 👆 -->
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -38,11 +38,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css"
     />
-
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css"
     />
     <link
       rel="stylesheet"
@@ -114,6 +109,9 @@
         width: 100%;
         flex-shrink: 0;
         z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       .title-text {
@@ -168,8 +166,7 @@
       }
 
       /* 진료받기 버튼은 광장 모드에서 숨김 (기존 동작 유지) */
-      .app-container.square-mode .open-chat-btn,
-      .app-container.square-mode .status-divider {
+      .app-container.square-mode .open-chat-btn {
         display: none;
       }
 
@@ -187,7 +184,7 @@
         text-underline-offset: 2px;
         cursor: pointer;
         padding: 0;
-        margin: 0 8px 0 8px;
+        margin: 0;
         white-space: nowrap;
         transition: opacity 0.2s ease;
       }
@@ -232,6 +229,10 @@
         transition:
           opacity 0.4s ease,
           transform 0.4s ease;
+      }
+
+      .today-top {
+        margin: 12px auto 0;
       }
 
       .door-block {
@@ -378,9 +379,14 @@
       }
 
       .app-container.square-mode .live-badge {
-        opacity: 0;
-        transform: translateY(-10px);
-        pointer-events: none;
+        display: none !important;
+      }
+
+      .app-container.square-mode .live-badge.today-top {
+        display: inline-flex !important;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
       }
 
       .character-area {
@@ -719,11 +725,16 @@
         <div class="header">
           <h1 id="app-title" class="title-text">온라인 폐쇄병동</h1>
           <div class="status-row">
-            <p>🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명</p>
+            <p>
+              🔥 현재 함께 두드리는 중: <span id="live-count">...</span>명<span
+                class="status-divider"
+              >
+                ⏐</span
+              >
+            </p>
             <button class="share-btn" id="share-btn" title="공유하기">
-              공유하기
+              공유하기 ↘︎
             </button>
-            <span class="status-divider">⏐</span>
             <button class="open-chat-btn" id="open-chat-btn">진료받기 ↘︎</button>
           </div>
           <div class="live-badge">
